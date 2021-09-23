@@ -11,16 +11,16 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Zero configuration
 - Cross platform .NET 6
 - UDP broadcasting for automatic service discovery without a single point of failure 
-- Organic Peer-To-Peer network of independent nodes without a single point of failure 
-- Transparent placement of virtual actors within a cluster 
+- Peer-To-Peer network of independent nodes without consensus leaders
+- Random placement of virtual actors within a cluster 
 - Ability to create multiple instances of the same type of actor using unique ID 
 - Ability to override any layer, property and method in the framework, including communication protocol, actor placement and activation strategy, peer discovery, etc
 - No binary serialization or 3rd party serializtion libraries 
-- Simple C# POCO classes as messages, no need in attributes or other decorators 
+- Simple C# POCO classes for messages, no attributes or other decorators 
 - Flexibility to process several messages within the same actor class or use different classes using `[Subscription]` attribute on top of the method 
-- Usage of simplest Kestrel server middleware to process message queries 
+- Kestrel server middleware to process message queries 
 - Usage of `Task` methods instead of FIFO loops for asynchronous communication 
-- Automatic loading nad mapping for actors and messages using reflection 
+- Automatic loading and mapping for actors and messages using reflection 
 - No use of locks
 
 # Sample 
