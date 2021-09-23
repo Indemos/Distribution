@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,14 +17,14 @@ namespace Distribution.DomainSpace
   public interface IService : IDisposable
   {
     /// <summary>
+    /// Port for communication
+    /// </summary>
+    int Port { get; set; }
+
+    /// <summary>
     /// Route intercepting incoming queries
     /// </summary>
     string Route { get; set; }
-
-    /// <summary>
-    /// Group of local actors
-    /// </summary>
-    IScene Scene { get; set; }
 
     /// <summary>
     /// Communication protocol
@@ -47,14 +47,14 @@ namespace Distribution.DomainSpace
   public class Service : IService
   {
     /// <summary>
-    /// Route intercepting incoming queries
+    /// Port for communication
     /// </summary>
-    public virtual string Route { get; set; }
+    public virtual int Port { get; set; }
 
     /// <summary>
-    /// Group of local actors
+    /// Route for communication
     /// </summary>
-    public virtual IScene Scene { get; set; }
+    public virtual string Route { get; set; }
 
     /// <summary>
     /// Communication protocol
@@ -67,6 +67,15 @@ namespace Distribution.DomainSpace
     public virtual IEnumerable<UriBuilder> Addresses { get; set; }
 
     /// <summary>
+    /// Constructor
+    /// </summary>
+    public Service()
+    {
+      Port = 0;
+      Route = "/messages";
+    }
+
+    /// <summary>
     /// Start the server
     /// </summary>
     /// <returns></returns>
@@ -76,7 +85,7 @@ namespace Distribution.DomainSpace
 
       var urls = new[]
       {
-        "http://0.0.0.0:0"
+        $"http://0.0.0.0:{ Port }"
       };
 
       var environment = Host
@@ -100,7 +109,6 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
-      Scene?.Dispose();
       Communicator?.Dispose();
     }
 
@@ -150,7 +158,8 @@ namespace Distribution.DomainSpace
         HttpOnly = HttpOnlyPolicy.Always
       });
 
-      ConfigureActors(app);
+      Communicator.Connect();
+      Communicator.Subscribe(app, Route);
 
       app.UseStaticFiles();
       app.UseRouting();
@@ -170,15 +179,6 @@ namespace Distribution.DomainSpace
             .Addresses
             .Select(o => new UriBuilder(o, Dns.GetHostName()));
         });
-    }
-
-    /// <summary>
-    /// Configure actors
-    /// </summary>
-    /// <param name="app"></param>
-    protected virtual void ConfigureActors(IApplicationBuilder app)
-    {
-      Communicator.Subscribe(app, Scene, "/actors");
     }
   }
 }

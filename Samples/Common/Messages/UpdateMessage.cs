@@ -1,4 +1,4 @@
-﻿namespace Server
+namespace Common
 {
   public class UpdateMessage
   {

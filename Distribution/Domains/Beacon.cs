@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Concurrency;
@@ -9,7 +9,7 @@ using Distribution.ModelSpace;
 
 namespace Distribution.DomainSpace
 {
-  public interface ICluster : IDisposable
+  public interface IBeacon : IDisposable
   {
     /// <summary>
     /// Port
@@ -42,14 +42,19 @@ namespace Distribution.DomainSpace
     TimeSpan DeleteSpan { get; set; }
 
     /// <summary>
-    /// Node creation stream
+    /// Endpoint creation stream
     /// </summary>
-    IObservable<IPointModel> CreateStream { get; }
+    IObservable<IBoxModel> CreateStream { get; }
 
     /// <summary>
-    /// Node deletion stream
+    /// Endpoint deletion stream
     /// </summary>
-    IObservable<IPointModel> DeleteStream { get; }
+    IObservable<IBoxModel> DeleteStream { get; }
+
+    /// <summary>
+    /// Endpoints
+    /// </summary>
+    ConcurrentDictionary<string, IBoxModel> Points { get; }
 
     /// <summary>
     /// Clear dead nodes
@@ -90,7 +95,7 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="itemName"></param>
     /// <returns></returns>
-    IPointModel GetItem(string itemName);
+    IBoxModel GetItem(string itemName);
 
     /// <summary>
     /// Create node reference
@@ -98,10 +103,10 @@ namespace Distribution.DomainSpace
     /// <param name="itemName"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    IPointModel CreateItem(string itemName, IPEndPoint endpoint);
+    IBoxModel CreateItem(string itemName, IPEndPoint endpoint);
   }
 
-  public class Cluster : ICluster
+  public class Beacon : IBeacon
   {
     protected UdpClient _client = null;
     protected IDisposable _creator = null;
@@ -110,9 +115,8 @@ namespace Distribution.DomainSpace
     protected EventLoopScheduler _sendScheduler = null;
     protected EventLoopScheduler _clearScheduler = null;
     protected EventLoopScheduler _subscribeScheduler = null;
-    protected ISubject<IPointModel> _createStream = null;
-    protected ISubject<IPointModel> _deleteStream = null;
-    protected ConcurrentDictionary<string, IPointModel> _items = new();
+    protected ISubject<IBoxModel> _createStream = null;
+    protected ISubject<IBoxModel> _deleteStream = null;
 
     /// <summary>
     /// Port
@@ -145,31 +149,37 @@ namespace Distribution.DomainSpace
     public virtual TimeSpan DeleteSpan { get; set; }
 
     /// <summary>
-    /// Node creation stream
+    /// Endpoint creation stream
     /// </summary>
-    public virtual IObservable<IPointModel> CreateStream => _createStream.AsObservable();
+    public virtual IObservable<IBoxModel> CreateStream => _createStream.AsObservable();
 
     /// <summary>
-    /// Node deletion stream
+    /// Endpoint deletion stream
     /// </summary>
-    public virtual IObservable<IPointModel> DeleteStream => _deleteStream.AsObservable();
+    public virtual IObservable<IBoxModel> DeleteStream => _deleteStream.AsObservable();
+
+    /// <summary>
+    /// Endpoints
+    /// </summary>
+    public virtual ConcurrentDictionary<string, IBoxModel> Points { get; protected set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public Cluster()
+    public Beacon()
     {
       Port = 2000;
       SendSpan = TimeSpan.FromSeconds(1);
       ClearSpan = TimeSpan.FromSeconds(5);
       DeleteSpan = TimeSpan.FromSeconds(10);
       SubscribeSpan = TimeSpan.FromMilliseconds(1);
+      Points = new ConcurrentDictionary<string, IBoxModel>();
 
       _sendScheduler = new EventLoopScheduler();
       _clearScheduler = new EventLoopScheduler();
       _subscribeScheduler = new EventLoopScheduler();
-      _createStream = new Subject<IPointModel>();
-      _deleteStream = new Subject<IPointModel>();
+      _createStream = new Subject<IBoxModel>();
+      _deleteStream = new Subject<IBoxModel>();
       _client = new UdpClient(AddressFamily.InterNetwork)
       {
         EnableBroadcast = true
@@ -181,9 +191,9 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="itemName"></param>
     /// <returns></returns>
-    public virtual IPointModel GetItem(string itemName)
+    public virtual IBoxModel GetItem(string itemName)
     {
-      if (_items.TryGetValue(itemName, out IPointModel response))
+      if (Points.TryGetValue(itemName, out IBoxModel response))
       {
         return response;
       }
@@ -197,9 +207,9 @@ namespace Distribution.DomainSpace
     /// <param name="itemName"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public virtual IPointModel CreateItem(string itemName, IPEndPoint endpoint)
+    public virtual IBoxModel CreateItem(string itemName, IPEndPoint endpoint)
     {
-      return _items[itemName] = new PointModel
+      return Points[itemName] = new BoxModel
       {
         Port = endpoint.Port,
         Time = DateTime.UtcNow,
@@ -213,6 +223,8 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
+      Points.Clear();
+
       _client?.Dispose();
       _creator?.Dispose();
       _cleaner?.Dispose();
@@ -281,7 +293,7 @@ namespace Distribution.DomainSpace
 
             item.Time = DateTime.UtcNow;
           }
-          catch (Exception) {}
+          catch (Exception) { }
         });
 
       return 0;
@@ -308,13 +320,13 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual int Clear(TimeSpan dropTime)
     {
-      _items = new ConcurrentDictionary<string, IPointModel>(_items.Where(item =>
+      Points = new ConcurrentDictionary<string, IBoxModel>(Points.Where(item =>
       {
         var isDead = item.Value.Time.Value.Ticks + dropTime.Ticks < DateTime.UtcNow.Ticks;
 
         if (isDead)
         {
-          _items.TryRemove(item);
+          Points.TryRemove(item);
           _deleteStream.OnNext(item.Value);
         }
 

@@ -1,6 +1,6 @@
-﻿namespace Server
+namespace Common
 {
-  public class DemoResponse
+  public class CreateMessage
   {
     public string Name { get; set; }
   }
