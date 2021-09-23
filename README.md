@@ -25,7 +25,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 
 # Sample 
 
-This is an example of using actors locally, within the same app. 
+This is an example of using actors locally within the same app. 
 
 ```C#
 async Task SendMessageToLocalActor()
