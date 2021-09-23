@@ -38,7 +38,7 @@ async Task SendMessageToLocalActor()
 }
 ```
 
-An example with a distributed network of actors in the cluster is a bit more complex and can be found in the `Samples` directory.
+An example with a distributed network of actors in the cluster is a bit more complex and can be found in the [Samples](https://github.com/Indemos/Distribution/tree/main/Samples) directory.
 
 # Roadmap 
 
