@@ -1,4 +1,6 @@
-﻿namespace Distribution.AttributeSpace
+using System;
+
+namespace Distribution.AttributeSpace
 {
   public class Subscription : Attribute
   {
