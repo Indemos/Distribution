@@ -5,6 +5,12 @@ The two mentioned frameworks are the closest to what I would like to use, but th
 Below is the list of features built-in the current framework. 
 Each of them can be considered as an advantage or a disadvantage depending on specific use-case. 
 
+# Nuget
+
+```
+Install-Package Distribution -Version 1.0.0
+```
+
 # Features
 
 - Single thread 
