@@ -33,10 +33,14 @@ Install-Package Distribution -Version 1.0.0
 This is an example of using actors locally within the same app. 
 
 ```C#
+// Message
+
 public class CreateMessage
 {
   public string Name { get; set; }
 }
+
+// Actor
 
 public class DemoActor
 {
@@ -47,13 +51,18 @@ public class DemoActor
   }
 }
 
-async Task SendMessageToLocalActor()
-{
-  var scene = new Scene();
-  var message = new CreateMessage { Name = "Local Message" };
-  var response = await scene.Send<DemoResponse>("Local Actor", message);
+// Processing
 
-  Console.WriteLine("Local Response : " + response.Data);
+public class Client
+{
+  async Task SendMessageToLocalActor()
+  {
+    var scene = new Scene();
+    var message = new CreateMessage { Name = "Local Message" };
+    var response = await scene.Send<DemoResponse>("Local Actor", message);
+
+    Console.WriteLine("Local Response : " + response.Data);
+  }
 }
 ```
 
