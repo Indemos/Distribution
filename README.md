@@ -36,16 +36,16 @@ This is an example of using actors locally within the same app.
 ```C#
 public class CreateMessage
 {
-	public string Name { get; set; }
+  public string Name { get; set; }
 }
 
 public class DemoActor
 {
-	[Subscription]
-	public virtual Task<DemoResponse> Create(CreateMessage message)
-	{
-		return Task.FromResult(new DemoResponse { Data = "Hello" });
-	}
+  [Subscription]
+  public virtual Task<DemoResponse> Create(CreateMessage message)
+  {
+    return Task.FromResult(new DemoResponse { Data = "Hello" });
+  }
 }
 
 async Task SendMessageToLocalActor()
