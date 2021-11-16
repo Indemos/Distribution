@@ -10,7 +10,6 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 ```
 Install-Package Distribution -Version 1.0.0
 ```
-
 # Features
 
 - Single thread 
