@@ -34,6 +34,20 @@ Install-Package Distribution -Version 1.0.0
 This is an example of using actors locally within the same app. 
 
 ```C#
+public class CreateMessage
+{
+	public string Name { get; set; }
+}
+
+public class DemoActor
+{
+	[Subscription]
+	public virtual Task<DemoResponse> Create(CreateMessage message)
+	{
+		return Task.FromResult(new DemoResponse { Data = "Hello" });
+	}
+}
+
 async Task SendMessageToLocalActor()
 {
   var scene = new Scene();
