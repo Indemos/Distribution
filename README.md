@@ -96,4 +96,4 @@ Even though existing modules are the most basic at the core, they can be easily 
 
 1. When there is no requirement to have millions of nodes, it's possible to implement `ICommunicator` and use sockets with Message Pack or Flat Buffers for much efficient performance. 
 2. Peer service discovery is encapsulated inside of the `Beacon` class. When needed, it's easy to override any of its method or implement `IBeacon` to use it with `Consul` or some other tool. 
-3. Switching from direct reflectino to compiled delegates for better performance is on the roadmap. 
+3. Switching from direct reflection to compiled delegates for better performance is on the roadmap. 
