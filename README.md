@@ -35,9 +35,14 @@ This is an example of using actors locally within the same app.
 ```C#
 // Message
 
-public class CreateMessage
+public class DemoMessage
 {
   public string Name { get; set; }
+}
+
+public class DemoResponse
+{
+  public string Data { get; set; }
 }
 
 // Actor
@@ -45,7 +50,7 @@ public class CreateMessage
 public class DemoActor
 {
   [Subscription]
-  public virtual Task<DemoResponse> Create(CreateMessage message)
+  public virtual Task<DemoResponse> Create(DemoMessage message)
   {
     return Task.FromResult(new DemoResponse { Data = "Hello" });
   }
@@ -58,7 +63,7 @@ public class Client
   async Task SendMessageToLocalActor()
   {
     var scene = new Scene();
-    var message = new CreateMessage { Name = "Local Message" };
+    var message = new DemoMessage { Name = "Local Message" };
     var response = await scene.Send<DemoResponse>("Local Actor", message);
 
     Console.WriteLine("Local Response : " + response.Data);
