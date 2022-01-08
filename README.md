@@ -54,7 +54,7 @@ public class DemoActor
   [Subscription]
   public virtual Task<DemoResponse> SomeAction(DemoMessage message)
   {
-    return Task.FromResult(new DemoResponse { Data = "Hello" });
+    return Task.FromResult(new DemoResponse { Data = "Response from actor" });
   }
 }
 
@@ -65,10 +65,10 @@ public class Client
   async Task SendMessageToActor()
   {
     var scene = new Scene();
-    var message = new DemoMessage { Name = "Local Message" };
-    var response = await scene.Send<DemoResponse>("Local Actor", message);
+    var message = new DemoMessage { Name = "Message to actor" };
+    var response = await scene.Send<DemoResponse>("Custom Actor ID", message);
 
-    Console.WriteLine("Local Response : " + response.Data);
+    Console.WriteLine("Response : " + response.Data);
   }
 }
 ```
