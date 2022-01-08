@@ -1,8 +1,9 @@
 # Distribution - Virtual Actor Framework
 
-There are decent amount of actor-like frameworks on GitHub, including those that support an idea of Virtual Actors, e.g. `Orleans` and `Proto.Actor`  
+There is decent amount of actor-like frameworks, including those that support an idea of Virtual Actors, e.g. `Orleans` and `Proto.Actor` 
+
 The two mentioned frameworks are the closest to what I would like to use, but they have some drawbacks, like extra build step or inability to use different transport protocol. 
-Below is the list of features built-in the current framework. 
+Below is the list of features built in the current framework. 
 Each of them can be considered as an advantage or a disadvantage depending on specific use-case. 
 
 # Features
@@ -20,7 +21,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Flexibility to process several messages within the same actor class or use different classes using `[Subscription]` attribute on top of the method 
 - Kestrel server middleware to process message queries 
 - Usage of `Task` methods instead of FIFO loops for asynchronous communication 
-- Automatic loading and mapping for actors and messages using reflection 
+- Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
 - No use of locks
 
 # Nuget
