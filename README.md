@@ -5,11 +5,6 @@ The two mentioned frameworks are the closest to what I would like to use, but th
 Below is the list of features built-in the current framework. 
 Each of them can be considered as an advantage or a disadvantage depending on specific use-case. 
 
-# Nuget
-
-```
-Install-Package Distribution -Version 1.0.0
-```
 # Features
 
 - Single thread 
@@ -28,12 +23,18 @@ Install-Package Distribution -Version 1.0.0
 - Automatic loading and mapping for actors and messages using reflection 
 - No use of locks
 
+# Nuget
+
+```
+Install-Package Distribution -Version 1.0.0
+```
+
 # Sample 
 
 This is an example of using actors locally within the same app. 
 
 ```C#
-// Message
+// Define message and response format 
 
 public class DemoMessage
 {
@@ -45,12 +46,12 @@ public class DemoResponse
   public string Data { get; set; }
 }
 
-// Actor
+// Define actor or handler processing this particular message format  
 
 public class DemoActor
 {
   [Subscription]
-  public virtual Task<DemoResponse> Create(DemoMessage message)
+  public virtual Task<DemoResponse> SomeAction(DemoMessage message)
   {
     return Task.FromResult(new DemoResponse { Data = "Hello" });
   }
@@ -60,7 +61,7 @@ public class DemoActor
 
 public class Client
 {
-  async Task SendMessageToLocalActor()
+  async Task SendMessageToActor()
   {
     var scene = new Scene();
     var message = new DemoMessage { Name = "Local Message" };
