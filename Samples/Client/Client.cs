@@ -2,6 +2,7 @@ using Common;
 using Distribution.CommunicatorSpace;
 using Distribution.DomainSpace;
 using System;
+using System.Diagnostics;
 
 namespace ClientSpace
 {
@@ -23,8 +24,26 @@ namespace ClientSpace
     {
       var scene = new Scene();
       var message = new CreateMessage { Name = "Local Message" };
-      var response = scene.Send<DemoResponse>("Local Actor", message).Result;
 
+      Stopwatch stopWatch = new Stopwatch();
+      stopWatch.Start();
+
+      DemoResponse response = null;
+
+      for (var i = 0; i < 100000; i++)
+      {
+        response = scene.Send<DemoResponse>("Local Actor", message).Result;
+      }
+
+      stopWatch.Stop();
+      // Get the elapsed time as a TimeSpan value.
+      TimeSpan ts = stopWatch.Elapsed;
+
+      // Format and display the TimeSpan value.
+      string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+          ts.Hours, ts.Minutes, ts.Seconds,
+          ts.Milliseconds / 10);
+      Console.WriteLine("RunTime " + elapsedTime);
       Console.WriteLine("Local Response : " + response.Data);
     }
 

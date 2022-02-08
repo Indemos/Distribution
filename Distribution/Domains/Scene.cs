@@ -1,7 +1,9 @@
 using Distribution.AttributeSpace;
+using Distribution.ModelSpace;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -25,12 +27,12 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Observers
     /// </summary>
-    IDictionary<string, MethodInfo> Observers { get; }
+    IDictionary<string, IRouteModel> Observers { get; }
 
     /// <summary>
     /// Observers that can provide response
     /// </summary>
-    IDictionary<string, MethodInfo> Processors { get; }
+    IDictionary<string, IRouteModel> Processors { get; }
 
     /// <summary>
     /// Get instance by composite index
@@ -39,7 +41,7 @@ namespace Distribution.DomainSpace
     /// <param name="descriptor"></param>
     /// <param name="processor"></param>
     /// <returns></returns>
-    object GetInstance(string name, string descriptor, MethodInfo processor);
+    object GetInstance(string name, string descriptor, IRouteModel processor);
 
     /// <summary>
     /// Send message
@@ -76,12 +78,12 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Observers
     /// </summary>
-    public virtual IDictionary<string, MethodInfo> Observers { get; protected set; }
+    public virtual IDictionary<string, IRouteModel> Observers { get; protected set; }
 
     /// <summary>
     /// Observers that can provide response
     /// </summary>
-    public virtual IDictionary<string, MethodInfo> Processors { get; protected set; }
+    public virtual IDictionary<string, IRouteModel> Processors { get; protected set; }
 
     /// <summary>
     /// Constructor
@@ -90,8 +92,8 @@ namespace Distribution.DomainSpace
     {
       Messages = new Dictionary<string, Type>();
       Instances = new Dictionary<string, object>();
-      Observers = new Dictionary<string, MethodInfo>();
-      Processors = new Dictionary<string, MethodInfo>();
+      Observers = new Dictionary<string, IRouteModel>();
+      Processors = new Dictionary<string, IRouteModel>();
 
       CreateMaps();
     }
@@ -103,7 +105,7 @@ namespace Distribution.DomainSpace
     /// <param name="descriptor"></param>
     /// <param name="processor"></param>
     /// <returns></returns>
-    public virtual object GetInstance(string name, string descriptor, MethodInfo processor)
+    public virtual object GetInstance(string name, string descriptor, IRouteModel processor)
     {
       var index = $"{ name }:{ descriptor }";
 
@@ -112,7 +114,7 @@ namespace Distribution.DomainSpace
         return actor;
       }
 
-      return Instances[index] = Activator.CreateInstance(processor.DeclaringType);
+      return Instances[index] = processor.Creator.DynamicInvoke();
     }
 
     /// <summary>
@@ -133,9 +135,11 @@ namespace Distribution.DomainSpace
       var inputs = new[] { message };
       var descriptor = message.GetType().Name;
 
-      if (Processors.TryGetValue(descriptor, out MethodInfo processor))
+      if (Processors.TryGetValue(descriptor, out IRouteModel route))
       {
-        response = processor.Invoke(GetInstance(name, descriptor, processor), inputs);
+        //response = processor.Invoke(GetInstance(name, descriptor, processor), inputs);
+        //response = route.Processor.DynamicInvoke(GetInstance(name, descriptor, route), message);
+        response = route.Processor.DynamicInvoke(message);
       }
 
       Distribute(name, message);
@@ -171,10 +175,10 @@ namespace Distribution.DomainSpace
       var inputs = new[] { message };
       var messageName = message.GetType().Name;
 
-      Parallel.ForEach(Observers, async observer =>
+      Parallel.ForEach(Observers.Values, async observer =>
       {
-        var actor = GetInstance(name, messageName, observer.Value);
-        var processor = observer.Value.Invoke(actor, inputs) as Task;
+        var actor = GetInstance(name, messageName, observer);
+        var processor = observer.Processor.DynamicInvoke(message) as Task;
 
         await processor;
       });
@@ -190,24 +194,31 @@ namespace Distribution.DomainSpace
         .GetAssemblies()
         .SelectMany(o => o.GetTypes())
         .SelectMany(o => o.GetMethods())
-        .Where(processor =>
+        .Where(descriptor =>
         {
-          var message = processor
+          var message = descriptor
             .GetParameters()
             .ElementAtOrDefault(0);
 
           var conditions = new[]
           {
-            processor.IsPublic,
-            processor.GetCustomAttributes(typeof(Subscription), true).Any(),
-            processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
+            descriptor.IsPublic,
+            descriptor.GetCustomAttributes(typeof(Subscription), true).Any(),
+            descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
             message is not null
           };
 
           if (conditions.All(o => o))
           {
-            Processors[message.ParameterType.Name] = processor;
-            Observers[processor.DeclaringType.FullName] = processor;
+            var route = new RouteModel
+            {
+              Descriptor = descriptor,
+              Processor = CreateProcessor(descriptor),
+              Creator = CreateConstructor(descriptor)
+            };
+
+            Processors[message.ParameterType.Name] = route;
+            Observers[descriptor.DeclaringType.FullName] = route;
             Messages[message.ParameterType.FullName] = message.ParameterType;
 
             return true;
@@ -216,6 +227,63 @@ namespace Distribution.DomainSpace
           return false;
 
         }).ToList();
+    }
+
+    /// <summary>
+    /// Compile processor into delegate
+    /// </summary>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    protected Delegate CreateProcessor(MethodInfo descriptor)
+    {
+      var arguments = descriptor
+        .GetParameters()
+        .Select(o => o.ParameterType)
+        .Concat(new[] { descriptor.ReturnType })
+        .ToArray();
+
+      return descriptor.CreateDelegate(
+        Expression.GetDelegateType(arguments),
+        Activator.CreateInstance(descriptor.DeclaringType));
+    }
+
+    /// <summary>
+    /// Compile processor into delegate
+    /// </summary>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    //protected Delegate CreateProcessor(MethodInfo descriptor)
+    //{
+    //  var instance = Expression.Parameter(descriptor.DeclaringType, descriptor.Name);
+
+    //  var inputs = descriptor
+    //    .GetParameters()
+    //    .Select(o => Expression.Parameter(o.ParameterType, o.Name))
+    //    .ToArray();
+
+    //  var processor = Expression.Call(
+    //    instance,
+    //    descriptor,
+    //    inputs
+    //  );
+
+    //  return Expression.Lambda(
+    //    Expression.Convert(processor, descriptor.ReturnType),
+    //    new[] { instance }.Concat(inputs)
+    //  ).Compile();
+    //}
+
+    /// <summary>
+    /// Create instance via reflection
+    /// </summary>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    protected Delegate CreateConstructor(MethodInfo descriptor)
+    {
+      var creator = descriptor.DeclaringType.GetConstructor(Array.Empty<Type>());
+      var dataType = typeof(Func<>).MakeGenericType(descriptor.DeclaringType);
+
+      return Expression.Lambda(dataType, Expression.New(creator)).Compile();
     }
   }
 }
