@@ -27,7 +27,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 # Nuget
 
 ```
-Install-Package Distribution -Version 1.0.0
+Install-Package Distribution -Version 1.0.1-prerelease
 ```
 
 # Sample 
