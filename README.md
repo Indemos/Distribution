@@ -10,7 +10,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 
 - Single thread 
 - Zero configuration
-- Cross platform .NET 6
+- Cross platform .NET 7
 - UDP broadcasting for automatic service discovery without a single point of failure 
 - Peer-To-Peer network of independent nodes without consensus leaders
 - Random placement of virtual actors within a cluster 
@@ -75,27 +75,21 @@ public class Client
 
 An example with a distributed network of actors in the cluster is a bit more complex and can be found in the [Samples](https://github.com/Indemos/Distribution/tree/main/Samples) directory.
 
-# Roadmap 
-
-- PubSub streaming from cluster to client
-- Performance improvement by replacing reflection with compiled delegates
-
 # Disclaimer
 
-In order to keep things simple and flexible, performance was sacrificed in favor of simplicity and scalability. 
+In order to keep things simple and flexible, the main focus was on simplicity and scalability rather than performance. 
 
-**Drawbacks**
+**Notes**
 
 Practically all parts of this framework use the most basic implementation of each layer meaning that it's a general purpose implementation that may need to be extended to solve more specific problems. 
 
 1. HTTP and JSON are somewhat slow, but were chosen for communication instead of sockets to make it easier to build a network of a million of nodes without a need to manage permanent connections between peers. 
 2. UDP broadcasting can detect nodes within the same network segment. To make peer discovery global there will be a need for services like Consul or manual NAT traversing.
-3. There is a heavy use of reflection for mapping between actors and messages. This module is not using compiled delegates yet.
+3. There is a heavy use of reflection for mapping between actors and messages. No benchmarks, but switching to compiled delegates may improve latency.
 
 **Improvements**
 
-Even though existing modules are the most basic at the core, they can be easily extended or overridden to achieve most of specific goals. 
+Even though existing modules are the most basic at the core, they can be easily extended or overridden to achieve more specific goals. 
 
-1. When there is no requirement to have millions of nodes, it's possible to implement `ICommunicator` and use sockets with Message Pack or Flat Buffers for much efficient performance. 
-2. Peer service discovery is encapsulated inside of the `Beacon` class. When needed, it's easy to override any of its method or implement `IBeacon` to use it with `Consul` or some other tool. 
-3. Switching from direct reflection to compiled delegates for better performance is on the roadmap. 
+1. When there is no requirement to have millions of nodes, it's possible to implement `ICommunicator` and use sockets with Message Pack or Flat Buffers for lower latency. 
+2. Peer discovery is encapsulated inside of the `Beacon` class. When needed, it's easy to override any of its method or implement `IBeacon` to use it with `Consul` or some other service discovery tool. 

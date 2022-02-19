@@ -7,7 +7,7 @@ namespace ClientSpace
 {
   public class Client
   {
-    public static void Main(string[] args)
+    public static void Main()
     {
       SendMessageToLocalActor();
       SendMessageToVirtualClusterActor();
