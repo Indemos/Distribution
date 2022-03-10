@@ -18,7 +18,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Ability to override any layer, including protocol, actor placement and activation strategy, discovery, etc
 - No binary serialization or 3rd party serializtion libraries 
 - Simple C# POCO classes for messages, no attributes or other decorators 
-- Flexibility to process several messages within the same actor class or use different classes using `[Subscription]` attribute 
+- Process messages using the same or multiple actor classes with `[Subscription]` attribute 
 - Kestrel server middleware to process message queries 
 - Usage of `Task` methods instead of FIFO loops for asynchronous communication 
 - Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
