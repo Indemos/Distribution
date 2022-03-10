@@ -16,7 +16,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Random placement of virtual actors within a cluster 
 - Ability to create multiple instances of the same type of actor using unique ID 
 - Ability to override any layer, including protocol, actor placement and activation strategy, discovery, etc
-- No binary serialization or 3rd party serializtion libraries 
+- No dangerous binary serialization or 3rd party serializtion libraries 
 - Simple C# POCO classes for messages, no attributes or other decorators 
 - Process messages using the same or multiple actor classes with `[Subscription]` attribute 
 - Kestrel server middleware to process message queries 
