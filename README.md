@@ -15,10 +15,10 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Peer-To-Peer network of independent nodes without consensus leaders
 - Random placement of virtual actors within a cluster 
 - Ability to create multiple instances of the same type of actor using unique ID 
-- Ability to override any layer, property and method in the framework, including communication protocol, actor placement and activation strategy, peer discovery, etc
+- Ability to override any layer, including protocol, actor placement and activation strategy, discovery, etc
 - No binary serialization or 3rd party serializtion libraries 
 - Simple C# POCO classes for messages, no attributes or other decorators 
-- Flexibility to process several messages within the same actor class or use different classes using `[Subscription]` attribute on top of the method 
+- Flexibility to process several messages within the same actor class or use different classes using `[Subscription]` attribute 
 - Kestrel server middleware to process message queries 
 - Usage of `Task` methods instead of FIFO loops for asynchronous communication 
 - Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
