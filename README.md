@@ -47,7 +47,7 @@ public class DemoResponse
   public string Data { get; set; }
 }
 
-// Define actor or handler processing this particular message format  
+// Define actor processing this particular message   
 
 public class DemoActor
 {
