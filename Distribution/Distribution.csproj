@@ -6,9 +6,6 @@
     <Nullable>disable</Nullable>
     <OutputType>Library</OutputType>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageProjectUrl>https://github.com/Indemos/Distribution</PackageProjectUrl>
-    <Version>1.0.0-prerelease</Version>
   </PropertyGroup>
 
   <ItemGroup>
