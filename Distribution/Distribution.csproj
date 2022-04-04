@@ -6,6 +6,15 @@
     <Nullable>disable</Nullable>
     <OutputType>Library</OutputType>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Version>1.0.3-prerelease</Version>
+    <Authors>artemiusgreat</Authors>
+    <Description>General purpose virtual actor framework for peer-to-peer microservices or in-process communication within the same app with possible extension to blockchains.</Description>
+    <Copyright>http://indemos.com</Copyright>
+    <PackageProjectUrl>https://github.com/Indemos/Distribution</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Indemos/Distribution</RepositoryUrl>
+    <PackageTags>distributed-systems cloud microservices actors udp cluster peer-to-peer blockchain actor-model mediator mediator-pattern actor-framework</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
