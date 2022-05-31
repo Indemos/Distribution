@@ -5,19 +5,19 @@ namespace Common
 {
   public class DemoActor
   {
-    [Subscription]
+    [Processor]
     public virtual Task<DemoResponse> Create(CreateMessage message)
     {
-      return Task.FromResult(new DemoResponse { Data = "Hello" });
+      return Task.FromResult(new DemoResponse { Data = "Local response" });
     }
 
-    [Subscription]
+    [Processor]
     public virtual Task<DemoResponse> Update(UpdateMessage message)
     {
-      return Task.FromResult(new DemoResponse { Data = "World" });
+      return Task.FromResult(new DemoResponse { Data = "Cluster response" });
     }
 
-    [Subscription]
+    [Observer]
     public virtual Task Subscribe(dynamic message)
     {
       return Task.CompletedTask;

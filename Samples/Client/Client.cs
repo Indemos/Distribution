@@ -2,14 +2,16 @@ using Common;
 using Distribution.CommunicatorSpace;
 using Distribution.DomainSpace;
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ClientSpace
 {
   public class Client
   {
-    public static void Main()
+    public static async Task Main()
     {
-      SendMessageToLocalActor();
+      await SendMessageToLocalActor();
       SendMessageToVirtualClusterActor();
 
       Console.ReadKey();
@@ -19,13 +21,43 @@ namespace ClientSpace
     /// Example of using actors within one app
     /// </summary>
     /// <returns></returns>
-    static void SendMessageToLocalActor()
+    static async Task SendMessageToLocalActor()
     {
+      // Demo actor
+
       var scene = new Scene();
       var message = new CreateMessage { Name = "Local Message" };
-      var response = scene.Send<DemoResponse>("Local Actor", message).Result;
+      var response = await scene.Send<DemoResponse>("Local Actor", message);
 
-      Console.WriteLine("Local Response : " + response.Data);
+      Console.WriteLine("Local Response : " + response.Data + Environment.NewLine);
+
+      // Calculator actor
+
+      Console.WriteLine("Calculator" + Environment.NewLine);
+
+      var count = 5;
+
+      Enumerable.Range(0, count).ForEach(async o =>
+      {
+        switch (true)
+        {
+          case true when o > count / 2:
+
+            var inc = await scene.Send<OperationResponse>(nameof(CalculatorActor), new IncrementMessage { Input = o });
+            Console.WriteLine("Op : " + inc.Operation + " " + inc.Value);
+            break;
+
+          case true when o < count / 2:
+
+            var dec = await scene.Send<OperationResponse>(nameof(CalculatorActor), new DecrementMessage { Input = o });
+            Console.WriteLine("Op : " + dec.Operation + " " + dec.Value);
+            break;
+        }
+      });
+
+      var calculation = await scene.Send<OperationResponse>(nameof(CalculatorActor), new SummaryMessage());
+
+      Console.WriteLine(Environment.NewLine + "Amount : " + calculation.Value + Environment.NewLine);
     }
 
     /// <summary>
@@ -74,9 +106,9 @@ namespace ClientSpace
 
       aTimer.Enabled = true;
       aTimer.AutoReset = false;
-      aTimer.Elapsed += (sender, e) =>
+      aTimer.Elapsed += async (sender, e) =>
       {
-        var response = cluster.Send<DemoResponse>("Virtual Cluster Actor", message).Result;
+        var response = await cluster.Send<DemoResponse>("Virtual Cluster Actor", message);
 
         Console.WriteLine("Cluster Response : " + response.Data);
       };

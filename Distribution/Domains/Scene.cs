@@ -36,10 +36,9 @@ namespace Distribution.DomainSpace
     /// Get instance by composite index
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="descriptor"></param>
     /// <param name="processor"></param>
     /// <returns></returns>
-    object GetInstance(string name, string descriptor, MethodInfo processor);
+    object GetInstance(string name, MethodInfo processor);
 
     /// <summary>
     /// Send message
@@ -100,19 +99,16 @@ namespace Distribution.DomainSpace
     /// Get instance by composite index
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="descriptor"></param>
     /// <param name="processor"></param>
     /// <returns></returns>
-    public virtual object GetInstance(string name, string descriptor, MethodInfo processor)
+    public virtual object GetInstance(string name, MethodInfo processor)
     {
-      var index = $"{ name }:{ descriptor }";
-
-      if (Instances.TryGetValue(index, out object actor))
+      if (Instances.TryGetValue(name, out object actor))
       {
         return actor;
       }
 
-      return Instances[index] = Activator.CreateInstance(processor.DeclaringType);
+      return Instances[name] = Activator.CreateInstance(processor.DeclaringType);
     }
 
     /// <summary>
@@ -135,7 +131,7 @@ namespace Distribution.DomainSpace
 
       if (Processors.TryGetValue(descriptor, out MethodInfo processor))
       {
-        response = processor.Invoke(GetInstance(name, descriptor, processor), inputs);
+        response = processor.Invoke(GetInstance(name, processor), inputs);
       }
 
       Distribute(name, message);
@@ -169,11 +165,10 @@ namespace Distribution.DomainSpace
     protected void Distribute(string name, object message)
     {
       var inputs = new[] { message };
-      var messageName = message.GetType().Name;
 
-      Parallel.ForEach(Observers, async observer =>
+      Observers.ForEach(async observer =>
       {
-        var actor = GetInstance(name, messageName, observer.Value);
+        var actor = GetInstance(observer.Key, observer.Value);
         var processor = observer.Value.Invoke(actor, inputs) as Task;
 
         await processor;
@@ -185,37 +180,62 @@ namespace Distribution.DomainSpace
     /// </summary>
     protected void CreateMaps()
     {
-      var processors = AppDomain
+      var actors = AppDomain
         .CurrentDomain
         .GetAssemblies()
         .SelectMany(o => o.GetTypes())
-        .SelectMany(o => o.GetMethods())
-        .Where(processor =>
+        .SelectMany(o => o.GetMethods());
+
+      var processors = actors.Where(processor =>
+      {
+        var message = processor
+          .GetParameters()
+          .ElementAtOrDefault(0);
+
+        var conditions = new[]
         {
-          var message = processor
-            .GetParameters()
-            .ElementAtOrDefault(0);
+          processor.IsPublic,
+          processor.GetCustomAttributes(typeof(Processor), true).Any(),
+          processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
+          message is not null
+        };
 
-          var conditions = new[]
-          {
-            processor.IsPublic,
-            processor.GetCustomAttributes(typeof(Subscription), true).Any(),
-            processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
-            message is not null
-          };
+        if (conditions.All(o => o))
+        {
+          Processors[message.ParameterType.Name] = processor;
+          Messages[message.ParameterType.FullName] = message.ParameterType;
 
-          if (conditions.All(o => o))
-          {
-            Processors[message.ParameterType.Name] = processor;
-            Observers[processor.DeclaringType.FullName] = processor;
-            Messages[message.ParameterType.FullName] = message.ParameterType;
+          return true;
+        }
 
-            return true;
-          }
+        return false;
 
-          return false;
+      }).ToList();
 
-        }).ToList();
+      var observers = actors.Where(processor =>
+      {
+        var message = processor
+          .GetParameters()
+          .ElementAtOrDefault(0);
+
+        var conditions = new[]
+        {
+          processor.IsPublic,
+          processor.GetCustomAttributes(typeof(Observer), true).Any(),
+          processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
+          message is not null
+        };
+
+        if (conditions.All(o => o))
+        {
+          Observers[processor.DeclaringType.FullName] = processor;
+
+          return true;
+        }
+
+        return false;
+
+      }).ToList();
     }
   }
 }
