@@ -37,15 +37,8 @@ This is an example of using actors locally within the same app.
 ```C#
 // Define message and response format 
 
-public class DemoMessage
-{
-  public string Name { get; set; }
-}
-
-public class DemoResponse
-{
-  public string Data { get; set; }
-}
+public class DemoMessage { public string Name { get; set; }}
+public class DemoResponse { public string Data { get; set; }}
 
 // Define actor processing this particular message   
 
