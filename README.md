@@ -44,7 +44,7 @@ public class DemoResponse { public string Data { get; set; }}
 
 public class DemoActor
 {
-  [Subscription]
+  [Processor]
   public virtual Task<DemoResponse> SomeAction(DemoMessage message)
   {
     return Task.FromResult(new DemoResponse { Data = "Response from actor" });
