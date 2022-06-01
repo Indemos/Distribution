@@ -54,7 +54,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task<TResponse> Send<TResponse>(string name, object message);
+    Task<T> Send<T>(string name, object message);
   }
 
   /// <summary>
@@ -92,7 +92,8 @@ namespace Distribution.DomainSpace
       Observers = new Dictionary<string, MethodInfo>();
       Processors = new Dictionary<string, MethodInfo>();
 
-      CreateMaps();
+      CreateProcessors();
+      CreateObservers();
     }
 
     /// <summary>
@@ -145,9 +146,9 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual Task<TResponse> Send<TResponse>(string name, object message)
+    public virtual Task<T> Send<T>(string name, object message)
     {
-      return Send(name, message) as Task<TResponse>;
+      return Send(name, message) as Task<T>;
     }
 
     /// <summary>
@@ -176,33 +177,40 @@ namespace Distribution.DomainSpace
     }
 
     /// <summary>
-    /// Create mapping between actors ans messages
+    /// Get actors
     /// </summary>
-    protected void CreateMaps()
+    /// <returns></returns>
+    protected IEnumerable<MethodInfo> GetActors()
     {
-      var actors = AppDomain
+      return AppDomain
         .CurrentDomain
         .GetAssemblies()
         .SelectMany(o => o.GetTypes())
         .SelectMany(o => o.GetMethods());
+    }
 
-      var processors = actors.Where(processor =>
+    /// <summary>
+    /// Create processors
+    /// </summary>
+    protected IEnumerable<MethodInfo> CreateProcessors()
+    {
+      return GetActors().Where(descriptor =>
       {
-        var message = processor
+        var message = descriptor
           .GetParameters()
           .ElementAtOrDefault(0);
 
         var conditions = new[]
         {
-          processor.IsPublic,
-          processor.GetCustomAttributes(typeof(Processor), true).Any(),
-          processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
+          descriptor.IsPublic,
+          descriptor.GetCustomAttributes(typeof(Processor), true).Any(),
+          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
           message is not null
         };
 
         if (conditions.All(o => o))
         {
-          Processors[message.ParameterType.Name] = processor;
+          Processors[message.ParameterType.Name] = descriptor;
           Messages[message.ParameterType.FullName] = message.ParameterType;
 
           return true;
@@ -211,24 +219,30 @@ namespace Distribution.DomainSpace
         return false;
 
       }).ToList();
+    }
 
-      var observers = actors.Where(processor =>
+    /// <summary>
+    /// Create observers
+    /// </summary>
+    protected IEnumerable<MethodInfo> CreateObservers()
+    {
+      return GetActors().Where(descriptor =>
       {
-        var message = processor
+        var message = descriptor
           .GetParameters()
           .ElementAtOrDefault(0);
 
         var conditions = new[]
         {
-          processor.IsPublic,
-          processor.GetCustomAttributes(typeof(Observer), true).Any(),
-          processor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
+          descriptor.IsPublic,
+          descriptor.GetCustomAttributes(typeof(Observer), true).Any(),
+          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
           message is not null
         };
 
         if (conditions.All(o => o))
         {
-          Observers[processor.DeclaringType.FullName] = processor;
+          Observers[descriptor.DeclaringType.FullName] = descriptor;
 
           return true;
         }

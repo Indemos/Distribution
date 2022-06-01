@@ -42,7 +42,7 @@ namespace Distribution.CommunicatorSpace
     /// <param name="message"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    Task<TResponse> Send<TResponse>(
+    Task<T> Send<T>(
       string source,
       string name,
       object message,
@@ -121,7 +121,7 @@ namespace Distribution.CommunicatorSpace
     /// <param name="message"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual Task<TResponse> Send<TResponse>(
+    public virtual Task<T> Send<T>(
       string source,
       string name,
       object message,
@@ -129,7 +129,7 @@ namespace Distribution.CommunicatorSpace
       IDictionary<object, object> options = null,
       CancellationTokenSource cts = null)
     {
-      return Task.FromResult<TResponse>(default);
+      return Task.FromResult<T>(default);
     }
 
     /// <summary>

@@ -44,7 +44,7 @@ namespace Distribution.CommunicatorSpace
     /// <param name="options"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public override async Task<TResponse> Send<TResponse>(
+    public override async Task<T> Send<T>(
       string source,
       string name,
       object message,
@@ -62,7 +62,7 @@ namespace Distribution.CommunicatorSpace
       var content = new StringContent(code);
       var response = await SendData(HttpMethod.Post, source, inputs, options, content, cts);
 
-      return await Decode<TResponse>(response);
+      return await Decode<T>(response);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ namespace Distribution.CommunicatorSpace
     {
       using (var client = new HttpClient())
       {
-        var cancellation = cts == null ? CancellationToken.None : cts.Token;
+        var cancellation = cts is null ? CancellationToken.None : cts.Token;
 
         if (headers is IEnumerable)
         {
@@ -150,7 +150,7 @@ namespace Distribution.CommunicatorSpace
     /// <returns></returns>
     protected virtual string Encode(object input)
     {
-      if (input == null)
+      if (input is null)
       {
         return null;
       }
@@ -167,7 +167,7 @@ namespace Distribution.CommunicatorSpace
     /// <returns></returns>
     protected virtual object Decode(string input, Type name)
     {
-      if (input == null)
+      if (input is null)
       {
         return default;
       }
@@ -183,7 +183,7 @@ namespace Distribution.CommunicatorSpace
     /// <returns></returns>
     protected virtual ValueTask<T> Decode<T>(Stream input)
     {
-      if (input == null)
+      if (input is null)
       {
         return default;
       }
@@ -223,7 +223,7 @@ namespace Distribution.CommunicatorSpace
         }
       }
 
-      if (cts == null)
+      if (cts is null)
       {
         cts = new CancellationTokenSource(Timeout);
       }

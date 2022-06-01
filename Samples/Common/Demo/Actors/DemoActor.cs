@@ -1,4 +1,5 @@
 using Distribution.AttributeSpace;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Common
@@ -15,6 +16,12 @@ namespace Common
     public virtual Task<DemoResponse> Update(UpdateMessage message)
     {
       return Task.FromResult(new DemoResponse { Data = "Cluster response" });
+    }
+
+    [Processor]
+    public virtual Task<DemoResponse> GetProcess(ProcessMessage message)
+    {
+      return Task.FromResult(new DemoResponse { Id = Thread.CurrentThread.ManagedThreadId });
     }
 
     [Observer]

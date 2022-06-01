@@ -288,7 +288,7 @@ namespace Distribution.DomainSpace
             var address = $"{ endpoint.Address }";
             var item = GetItem(address);
 
-            if (item == null)
+            if (item is null)
             {
               _createStream.OnNext(item = CreateItem(address, endpoint));
             }

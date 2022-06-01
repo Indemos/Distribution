@@ -43,7 +43,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task<TResponse> Send<TResponse>(string name, object message);
+    Task<T> Send<T>(string name, object message);
   }
 
   public class Cluster : ICluster
@@ -116,17 +116,17 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual Task<TResponse> Send<TResponse>(string name, object message)
+    public virtual Task<T> Send<T>(string name, object message)
     {
       if (Beacon.Points.IsEmpty)
       {
-        return Task.FromResult<TResponse>(default);
+        return Task.FromResult<T>(default);
       }
 
       var address = GetInstance(name).Address;
       var source = new UriBuilder(null, address, Beacon.Port, Route);
 
-      return Communicator.Send<TResponse>($"{ source }", name, message, null, null);
+      return Communicator.Send<T>($"{ source }", name, message, null, null);
     }
   }
 }
