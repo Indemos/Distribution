@@ -1,5 +1,7 @@
 using Distribution.AttributeSpace;
+using Distribution.SchedulerSpace;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +14,11 @@ namespace Distribution.DomainSpace
   /// </summary>
   public interface IScene : IDisposable
   {
+    /// <summary>
+    /// Scheduler to execute tasks in a dedicated thread
+    /// </summary>
+    MessageScheduler Scheduler { get; }
+
     /// <summary>
     /// Messages
     /// </summary>
@@ -63,6 +70,11 @@ namespace Distribution.DomainSpace
   public class Scene : IScene
   {
     /// <summary>
+    /// Scheduler to execute tasks in a dedicated thread
+    /// </summary>
+    public virtual MessageScheduler Scheduler { get; protected set; }
+
+    /// <summary>
     /// Messages
     /// </summary>
     public virtual IDictionary<string, Type> Messages { get; protected set; }
@@ -87,10 +99,11 @@ namespace Distribution.DomainSpace
     /// </summary>
     public Scene()
     {
-      Messages = new Dictionary<string, Type>();
-      Instances = new Dictionary<string, object>();
-      Observers = new Dictionary<string, MethodInfo>();
-      Processors = new Dictionary<string, MethodInfo>();
+      Scheduler = new();
+      Messages = new ConcurrentDictionary<string, Type>();
+      Instances = new ConcurrentDictionary<string, object>();
+      Observers = new ConcurrentDictionary<string, MethodInfo>();
+      Processors = new ConcurrentDictionary<string, MethodInfo>();
 
       CreateProcessors();
       CreateObservers();
@@ -149,6 +162,24 @@ namespace Distribution.DomainSpace
     public virtual Task<T> Send<T>(string name, object message)
     {
       return Send(name, message) as Task<T>;
+    }
+
+    /// <summary>
+    /// Send message to separate process
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    public virtual Task<T> Schedule<T>(string name, object message)
+    {
+      var source = new TaskCompletionSource<T>();
+
+      Scheduler.Send(() =>
+      {
+        source.SetResult(Send(name, message).GetAwaiter().GetResult());
+      });
+
+      return source.Task;
     }
 
     /// <summary>
