@@ -94,18 +94,18 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual IBoxModel GetInstance(string name)
     {
-      if (Beacon.Points.IsEmpty)
+      if (Beacon.Boxes.IsEmpty)
       {
         return null;
       }
 
-      if (Instances.TryGetValue(name, out IBoxModel source) && Beacon.Points.ContainsKey(source.Address))
+      if (Instances.TryGetValue(name, out IBoxModel source) && Beacon.Boxes.ContainsKey(source.Address))
       {
         return source;
       }
 
-      var index = new Random().Next(0, Beacon.Points.Count - 1);
-      var endpoint = Beacon.Points.Values.ElementAt(index);
+      var index = new Random().Next(0, Beacon.Boxes.Count - 1);
+      var endpoint = Beacon.Boxes.Values.ElementAt(index);
 
       return Instances[name] = endpoint;
     }
@@ -118,7 +118,7 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual Task<T> Send<T>(string name, object message)
     {
-      if (Beacon.Points.IsEmpty)
+      if (Beacon.Boxes.IsEmpty)
       {
         return Task.FromResult<T>(default);
       }

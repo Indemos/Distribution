@@ -62,6 +62,14 @@ namespace Distribution.DomainSpace
     /// <param name="message"></param>
     /// <returns></returns>
     Task<T> Send<T>(string name, object message);
+
+    /// <summary>
+    /// Send message to separate process
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    Task<T> Schedule<T>(string name, object message);
   }
 
   /// <summary>

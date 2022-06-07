@@ -2,6 +2,8 @@ using Common;
 using Distribution.CommunicatorSpace;
 using Distribution.DomainSpace;
 using System;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 namespace ServerSpace
 {
@@ -42,11 +44,14 @@ namespace ServerSpace
 
       var beacon = new Beacon
       {
-        Port = port,
-        Message = "Server"
+        Port = port
       };
 
-      beacon.SendInterval();
+      // beacon.Locate("Chain", port, TimeSpan.FromSeconds(1));
+
+      Observable
+        .Interval(TimeSpan.FromSeconds(1), new EventLoopScheduler())
+        .Subscribe(o => beacon.Send("Chain", port));
 
       // Make the current app a part of a cluster and provide preferred communicator
 

@@ -81,15 +81,14 @@ namespace ClientSpace
         Scene = scene
       };
 
-      // Create beacon for service discovery, start UDP broadcasting of "Client" and subscribe to broadcasting from "Server" peers
+      // Create beacon for service discovery, start UDP broadcasting of "Client" and subscribe to broadcasting from "Chain" network
 
       var beacon = new Beacon
       {
-        Port = port,
-        Message = "Client"
+        Port = port
       };
 
-      beacon.Subscribe("Server");
+      beacon.Locate("Chain", port, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10));
 
       // Make the current app a part of a cluster and provide preferred communicator
 
@@ -100,18 +99,17 @@ namespace ClientSpace
         Communicator = communicator
       };
 
-      // Start sending messages to random actors in a cluster
+      beacon.DropStream.Subscribe(o =>
+      {
+        Console.WriteLine("Drop : " + o.Address);
+      });
 
-      var aTimer = new System.Timers.Timer(5000);
-
-      aTimer.Enabled = true;
-      aTimer.AutoReset = false;
-      aTimer.Elapsed += async (sender, e) =>
+      beacon.CreateStream.Subscribe(async o =>
       {
         var response = await cluster.Send<DemoResponse>("Virtual Cluster Actor", message);
 
         Console.WriteLine("Cluster Response : " + response.Data);
-      };
+      });
     }
   }
 }

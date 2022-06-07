@@ -19,151 +19,87 @@ namespace Distribution.DomainSpace
     int Port { get; set; }
 
     /// <summary>
-    /// Message to broadcast
-    /// </summary>
-    string Message { get; set; }
-
-    /// <summary>
-    /// How often to check that host is up
-    /// </summary>
-    TimeSpan ClearSpan { get; set; }
-
-    /// <summary>
-    /// How often to send messages
-    /// </summary>
-    TimeSpan SendSpan { get; set; }
-
-    /// <summary>
-    /// How often to check incoming messages
-    /// </summary>
-    TimeSpan SubscribeSpan { get; set; }
-
-    /// <summary>
-    /// Drop time after which the host is considered dead
-    /// </summary>
-    TimeSpan DeleteSpan { get; set; }
-
-    /// <summary>
     /// Endpoint creation stream
     /// </summary>
-    IObservable<IBoxModel> CreateStream { get; }
+    ISubject<IBoxModel> CreateStream { get; }
 
     /// <summary>
     /// Endpoint deletion stream
     /// </summary>
-    IObservable<IBoxModel> DeleteStream { get; }
+    ISubject<IBoxModel> DropStream { get; }
 
     /// <summary>
     /// Endpoints
     /// </summary>
-    ConcurrentDictionary<string, IBoxModel> Points { get; }
+    ConcurrentDictionary<string, IBoxModel> Boxes { get; }
 
     /// <summary>
-    /// Clear dead nodes
+    /// Clear unresponsive nodes
     /// </summary>
     /// <param name="dropTime"></param>
     /// <returns></returns>
-    int Clear(TimeSpan dropTime);
-
-    /// <summary>
-    /// Clean dead nodes on timer
-    /// </summary>
-    /// <returns></returns>
-    int ClearInterval();
+    void Drop(TimeSpan dropTime);
 
     /// <summary>
     /// Send message
     /// </summary>
-    /// <param name="port"></param>
     /// <param name="message"></param>
+    /// <param name="port"></param>
     /// <returns></returns>
-    int Send(int port, string message);
+    int Send(string message, int port);
 
     /// <summary>
     /// Subscribe to messages
     /// </summary>
-    /// <param name="message"></param>
+    /// <param name="name"></param>
+    /// <param name="port"></param>
+    /// <param name="createSpan"></param>
+    /// <param name="dropSpan"></param>
     /// <returns></returns>
-    int Subscribe(string message);
-
-    /// <summary>
-    /// Send message on timer
-    /// </summary>
-    /// <returns></returns>
-    int SendInterval();
+    IDisposable Locate(string name, int port, TimeSpan createSpan, TimeSpan dropSpan);
 
     /// <summary>
     /// Get node reference
     /// </summary>
-    /// <param name="itemName"></param>
+    /// <param name="name"></param>
     /// <returns></returns>
-    IBoxModel GetItem(string itemName);
+    IBoxModel GetBox(string name);
 
     /// <summary>
     /// Create node reference
     /// </summary>
-    /// <param name="itemName"></param>
+    /// <param name="name"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    IBoxModel CreateItem(string itemName, IPEndPoint endpoint);
+    IBoxModel CreateBox(string name, IPEndPoint endpoint);
   }
 
   public class Beacon : IBeacon
   {
-    protected UdpClient _client = null;
-    protected IDisposable _creator = null;
-    protected IDisposable _cleaner = null;
-    protected IDisposable _producer = null;
-    protected EventLoopScheduler _sendScheduler = null;
-    protected EventLoopScheduler _clearScheduler = null;
-    protected EventLoopScheduler _subscribeScheduler = null;
-    protected ISubject<IBoxModel> _createStream = null;
-    protected ISubject<IBoxModel> _deleteStream = null;
-
     /// <summary>
     /// Port
     /// </summary>
     public virtual int Port { get; set; }
 
     /// <summary>
-    /// Message to broadcast
+    /// UDP client
     /// </summary>
-    public virtual string Message { get; set; }
-
-    /// <summary>
-    /// How often to check that host is up
-    /// </summary>
-    public virtual TimeSpan ClearSpan { get; set; }
-
-    /// <summary>
-    /// How often to send messages
-    /// </summary>
-    public virtual TimeSpan SendSpan { get; set; }
-
-    /// <summary>
-    /// How often to check incoming messages
-    /// </summary>
-    public virtual TimeSpan SubscribeSpan { get; set; }
-
-    /// <summary>
-    /// Drop time after which the host is considered dead
-    /// </summary>
-    public virtual TimeSpan DeleteSpan { get; set; }
+    public virtual UdpClient Communicator { get; protected set; }
 
     /// <summary>
     /// Endpoint creation stream
     /// </summary>
-    public virtual IObservable<IBoxModel> CreateStream => _createStream.AsObservable();
+    public virtual ISubject<IBoxModel> CreateStream { get; protected set; }
 
     /// <summary>
-    /// Endpoint deletion stream
+    /// Endpoint dropping stream
     /// </summary>
-    public virtual IObservable<IBoxModel> DeleteStream => _deleteStream.AsObservable();
+    public virtual ISubject<IBoxModel> DropStream { get; protected set; }
 
     /// <summary>
     /// Endpoints
     /// </summary>
-    public virtual ConcurrentDictionary<string, IBoxModel> Points { get; protected set; }
+    public virtual ConcurrentDictionary<string, IBoxModel> Boxes { get; protected set; }
 
     /// <summary>
     /// Constructor
@@ -171,47 +107,36 @@ namespace Distribution.DomainSpace
     public Beacon()
     {
       Port = 2000;
-      SendSpan = TimeSpan.FromSeconds(1);
-      ClearSpan = TimeSpan.FromSeconds(5);
-      DeleteSpan = TimeSpan.FromSeconds(10);
-      SubscribeSpan = TimeSpan.FromMilliseconds(1);
-      Points = new ConcurrentDictionary<string, IBoxModel>();
-
-      _sendScheduler = new EventLoopScheduler();
-      _clearScheduler = new EventLoopScheduler();
-      _subscribeScheduler = new EventLoopScheduler();
-      _createStream = new Subject<IBoxModel>();
-      _deleteStream = new Subject<IBoxModel>();
-      _client = new UdpClient(AddressFamily.InterNetwork)
+      DropStream = new Subject<IBoxModel>();
+      CreateStream = new Subject<IBoxModel>();
+      Boxes = new ConcurrentDictionary<string, IBoxModel>();
+      Communicator = new UdpClient(AddressFamily.InterNetwork)
       {
-        EnableBroadcast = true
+        EnableBroadcast = true,
+        ExclusiveAddressUse = false
       };
     }
 
     /// <summary>
     /// Get node reference
     /// </summary>
-    /// <param name="itemName"></param>
+    /// <param name="name"></param>
     /// <returns></returns>
-    public virtual IBoxModel GetItem(string itemName)
+    public virtual IBoxModel GetBox(string name)
     {
-      if (Points.TryGetValue(itemName, out IBoxModel response))
-      {
-        return response;
-      }
-
-      return null;
+      Boxes.TryGetValue(name, out IBoxModel response);
+      return response;
     }
 
     /// <summary>
     /// Create node reference
     /// </summary>
-    /// <param name="itemName"></param>
+    /// <param name="name"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public virtual IBoxModel CreateItem(string itemName, IPEndPoint endpoint)
+    public virtual IBoxModel CreateBox(string name, IPEndPoint endpoint)
     {
-      return Points[itemName] = new BoxModel
+      return new BoxModel
       {
         Port = endpoint.Port,
         Time = DateTime.UtcNow,
@@ -225,117 +150,82 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
-      Points.Clear();
-
-      _client?.Dispose();
-      _creator?.Dispose();
-      _cleaner?.Dispose();
-      _producer?.Dispose();
-      _sendScheduler?.Dispose();
-      _clearScheduler?.Dispose();
-      _subscribeScheduler?.Dispose();
+      Boxes?.Clear();
+      Communicator?.Dispose();
     }
 
     /// <summary>
     /// Send message
     /// </summary>
-    /// <param name="port"></param>
     /// <param name="message"></param>
+    /// <param name="port"></param>
     /// <returns></returns>
-    public virtual int Send(int port, string message)
+    public virtual int Send(string message, int port)
     {
       var data = Encoding.UTF8.GetBytes(message);
       var endpoint = new IPEndPoint(IPAddress.Broadcast, port);
 
-      return _client.Send(data, data.Length, endpoint);
-    }
-
-    /// <summary>
-    /// Send message on timer
-    /// </summary>
-    /// <param name="port"></param>
-    /// <param name="interval"></param>
-    /// <returns></returns>
-    public virtual int SendInterval()
-    {
-      _producer?.Dispose();
-      _producer = Observable
-        .Interval(SendSpan, _sendScheduler)
-        .Subscribe(o => Send(Port, Message));
-
-      return 0;
+      return Communicator.Send(data, data.Length, endpoint);
     }
 
     /// <summary>
     /// Subscribe to messages
     /// </summary>
-    /// <param name="message"></param>
+    /// <param name="name"></param>
+    /// <param name="port"></param>
+    /// <param name="createSpan"></param>
+    /// <param name="dropSpan"></param>
     /// <returns></returns>
-    public virtual int Subscribe(string message)
+    public virtual IDisposable Locate(string name, int port, TimeSpan createSpan, TimeSpan dropSpan)
     {
-      var endpoint = new IPEndPoint(IPAddress.Any, Port);
+      var endpoint = new IPEndPoint(IPAddress.Any, port);
 
-      _client.Client.Bind(endpoint);
+      Communicator.Client.Bind(endpoint);
 
-      _creator?.Dispose();
-      _creator = Observable
-        .Interval(SubscribeSpan, _subscribeScheduler)
+      return Observable
+        .Interval(createSpan, new EventLoopScheduler())
         .Subscribe(o =>
         {
-          try
+          Drop(dropSpan);
+          Communicator.ReceiveAsync().ContinueWith(async o =>
           {
-            var message = Encoding.UTF8.GetString(_client.Receive(ref endpoint));
-            var address = $"{ endpoint.Address }";
-            var item = GetItem(address);
+            var response = await o;
+            var box = response.RemoteEndPoint;
+            var message = Encoding.UTF8.GetString(response.Buffer);
 
-            if (item is null)
+            if (Equals(name, message))
             {
-              _createStream.OnNext(item = CreateItem(address, endpoint));
+              var address = $"{ box.Address }";
+              var item = GetBox(address);
+
+              if (item is null)
+              {
+                CreateStream.OnNext(item = Boxes[address] = CreateBox(address, box));
+              }
+
+              item.Time = DateTime.UtcNow;
             }
-
-            item.Time = DateTime.UtcNow;
-          }
-          catch (Exception) { }
+          });
         });
-
-      return 0;
     }
 
     /// <summary>
-    /// Clear dead nodes on timer
-    /// </summary>
-    /// <returns></returns>
-    public virtual int ClearInterval()
-    {
-      _cleaner?.Dispose();
-      _cleaner = Observable
-        .Interval(ClearSpan, _clearScheduler)
-        .Subscribe(o => Clear(DeleteSpan));
-
-      return 0;
-    }
-
-    /// <summary>
-    /// Clear dead nodes
+    /// Clear unresponsive nodes
     /// </summary>
     /// <param name="dropTime"></param>
     /// <returns></returns>
-    public virtual int Clear(TimeSpan dropTime)
+    public virtual void Drop(TimeSpan dropTime)
     {
-      Points = new ConcurrentDictionary<string, IBoxModel>(Points.Where(item =>
+      Boxes = new ConcurrentDictionary<string, IBoxModel>(Boxes.Where(item =>
       {
-        var isDead = item.Value.Time.Value.Ticks + dropTime.Ticks < DateTime.UtcNow.Ticks;
-
-        if (isDead)
+        if (DateTime.UtcNow.Ticks - item.Value.Time.Value.Ticks > dropTime.Ticks)
         {
-          Points.TryRemove(item);
-          _deleteStream.OnNext(item.Value);
+          DropStream.OnNext(item.Value);
+          return false;
         }
 
-        return isDead;
+        return true;
       }));
-
-      return 0;
     }
   }
 }
