@@ -1,17 +1,14 @@
+using Distribution.ModelSpace;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using Distribution.DomainSpace;
-using Distribution.ModelSpace;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 
 namespace Distribution.CommunicatorSpace
 {
@@ -52,7 +49,7 @@ namespace Distribution.CommunicatorSpace
       IDictionary<object, object> options = null,
       CancellationTokenSource cts = null)
     {
-      var code = Encode(new MessageModel
+      var code = Encode(new EnvelopeModel
       {
         Name = name,
         Message = message,
@@ -84,7 +81,7 @@ namespace Distribution.CommunicatorSpace
       {
         var cancellation = cts is null ? CancellationToken.None : cts.Token;
 
-        if (headers is IEnumerable)
+        if (headers is not null)
         {
           foreach (var item in headers)
           {
@@ -117,15 +114,15 @@ namespace Distribution.CommunicatorSpace
         {
           var session = context.Session.Id;
           var content = context.Request.Body;
-          var envelope = await Decode<MessageModel>(content);
+          var envelope = await Decode<EnvelopeModel>(content);
 
           if (envelope is not null)
           {
-            var messageType = Scene.Messages[envelope.Descriptor];
-            var message = Decode($"{ envelope.Message }", messageType);
-            var response = await Scene.Send($"{ session }:{ envelope.Name }", message);
+            var descriptor = Scene.GetMessage(envelope.Descriptor);
+            var message = Decode($"{ envelope.Message }", descriptor);
+            var response = await Scene.Send<object>($"{ session }:{ envelope.Name }", message);
 
-            await context.Response.WriteAsync(Encode(response as object));
+            await context.Response.WriteAsync(Encode(response));
           }
         }
 
@@ -215,7 +212,7 @@ namespace Distribution.CommunicatorSpace
         RequestUri = new UriBuilder(source + "?" + GetQuery(inputs)).Uri
       };
 
-      if (headers is IEnumerable)
+      if (headers is not null)
       {
         foreach (var item in headers)
         {
@@ -256,7 +253,7 @@ namespace Distribution.CommunicatorSpace
     {
       var inputs = HttpUtility.ParseQueryString(string.Empty);
 
-      if (query is IEnumerable)
+      if (query is not null)
       {
         foreach (var item in query)
         {

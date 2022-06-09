@@ -43,7 +43,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task<T> Send<T>(string name, object message);
+    Task<T> Send<T>(string name, dynamic message);
   }
 
   public class Cluster : ICluster
@@ -104,7 +104,8 @@ namespace Distribution.DomainSpace
         return source;
       }
 
-      var index = new Random().Next(0, Beacon.Boxes.Count - 1);
+      var generator = new Random();
+      var index = generator.Next(0, Beacon.Boxes.Count - 1);
       var endpoint = Beacon.Boxes.Values.ElementAt(index);
 
       return Instances[name] = endpoint;
@@ -116,7 +117,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual Task<T> Send<T>(string name, object message)
+    public virtual Task<T> Send<T>(string name, dynamic message)
     {
       if (Beacon.Boxes.IsEmpty)
       {

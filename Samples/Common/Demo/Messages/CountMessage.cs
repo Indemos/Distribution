@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class ProcessMessage
+  public class CountMessage
   {
     public int Id { get; set; }
   }

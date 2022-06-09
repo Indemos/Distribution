@@ -4,6 +4,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -17,43 +19,27 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    MessageScheduler Scheduler { get; }
+    IMessageScheduler Scheduler { get; }
 
     /// <summary>
-    /// Messages
-    /// </summary>
-    IDictionary<string, Type> Messages { get; }
-
-    /// <summary>
-    /// Activations
-    /// </summary>
-    IDictionary<string, object> Instances { get; }
-
-    /// <summary>
-    /// Observers
-    /// </summary>
-    IDictionary<string, MethodInfo> Observers { get; }
-
-    /// <summary>
-    /// Observers that can provide response
-    /// </summary>
-    IDictionary<string, MethodInfo> Processors { get; }
-
-    /// <summary>
-    /// Get instance by composite index
+    /// Get message descriptor
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="processor"></param>
     /// <returns></returns>
-    object GetInstance(string name, MethodInfo processor);
+    Type GetMessage(string name);
 
     /// <summary>
-    /// Send message
+    /// Subscribe to messages
     /// </summary>
     /// <param name="name"></param>
+    /// <returns></returns>
+    void Subscribe<T>(Action<T> action);
+
+    /// <summary>
+    /// Distribute message among all actors
+    /// </summary>
     /// <param name="message"></param>
-    /// <returns></returns>
-    dynamic Send(string name, object message);
+    void Send(object message);
 
     /// <summary>
     /// Send message
@@ -68,8 +54,9 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="name"></param>
     /// <param name="message"></param>
+    /// <param name="scheduler"></param>
     /// <returns></returns>
-    Task<T> Schedule<T>(string name, object message);
+    Task<T> Send<T>(string name, object message, IMessageScheduler scheduler);
   }
 
   /// <summary>
@@ -78,59 +65,93 @@ namespace Distribution.DomainSpace
   public class Scene : IScene
   {
     /// <summary>
-    /// Scheduler to execute tasks in a dedicated thread
-    /// </summary>
-    public virtual MessageScheduler Scheduler { get; protected set; }
-
-    /// <summary>
     /// Messages
     /// </summary>
-    public virtual IDictionary<string, Type> Messages { get; protected set; }
+    protected IDictionary<string, Type> _messages = null;
 
     /// <summary>
     /// Activations
     /// </summary>
-    public virtual IDictionary<string, object> Instances { get; protected set; }
+    protected IDictionary<string, object> _instances = null;
 
     /// <summary>
     /// Observers
     /// </summary>
-    public virtual IDictionary<string, MethodInfo> Observers { get; protected set; }
+    protected IDictionary<string, MethodInfo> _observers = null;
 
     /// <summary>
     /// Observers that can provide response
     /// </summary>
-    public virtual IDictionary<string, MethodInfo> Processors { get; protected set; }
+    protected IDictionary<string, MethodInfo> _processors = null;
+
+    /// <summary>
+    /// Message subscribers
+    /// </summary>
+    protected IDictionary<string, Action<object>> _subscribers = null;
+
+    /// <summary>
+    /// Scheduler to execute tasks in a dedicated thread
+    /// </summary>
+    public virtual IMessageScheduler Scheduler { get; protected set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
     public Scene()
     {
-      Scheduler = new();
-      Messages = new ConcurrentDictionary<string, Type>();
-      Instances = new ConcurrentDictionary<string, object>();
-      Observers = new ConcurrentDictionary<string, MethodInfo>();
-      Processors = new ConcurrentDictionary<string, MethodInfo>();
+      Scheduler = new MessageScheduler();
+
+      _messages = new ConcurrentDictionary<string, Type>();
+      _instances = new ConcurrentDictionary<string, object>();
+      _observers = new ConcurrentDictionary<string, MethodInfo>();
+      _processors = new ConcurrentDictionary<string, MethodInfo>();
+      _subscribers = new ConcurrentDictionary<string, Action<object>>();
 
       CreateProcessors();
       CreateObservers();
     }
 
     /// <summary>
-    /// Get instance by composite index
+    /// Get message descriptor
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="processor"></param>
     /// <returns></returns>
-    public virtual object GetInstance(string name, MethodInfo processor)
+    public virtual Type GetMessage(string name)
     {
-      if (Instances.TryGetValue(name, out object actor))
+      return _messages[name];
+    }
+
+    /// <summary>
+    /// Subscribe to messages
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public virtual void Subscribe<T>(Action<T> action)
+    {
+      _subscribers[typeof(T).Name] = o => action((T)o);
+    }
+
+    /// <summary>
+    /// Distribute message among all actors
+    /// </summary>
+    /// <param name="message"></param>
+    public virtual void Send(object message)
+    {
+      var inputs = new[] { message };
+      var descriptor = message.GetType().Name;
+
+      if (_subscribers.TryGetValue(descriptor, out Action<object> messageSubscriber))
       {
-        return actor;
+        messageSubscriber(message);
       }
 
-      return Instances[name] = Activator.CreateInstance(processor.DeclaringType);
+      Parallel.ForEach(_observers, async observer =>
+      {
+        var actor = GetInstance(observer.Key, observer.Value);
+        var processor = observer.Value.Invoke(actor, inputs) as Task;
+
+        await processor;
+      });
     }
 
     /// <summary>
@@ -139,37 +160,35 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual dynamic Send(string name, object message)
+    public virtual async Task<T> Send<T>(string name, object message)
     {
-      dynamic response = null;
+      T response = default;
 
       if (message is null)
       {
         return response;
       }
 
-      var inputs = new[] { message };
       var descriptor = message.GetType().Name;
 
-      if (Processors.TryGetValue(descriptor, out MethodInfo processor))
+      if (_subscribers.TryGetValue(descriptor, out Action<object> messageSubscriber))
       {
-        response = processor.Invoke(GetInstance(name, processor), inputs);
+        messageSubscriber(message);
       }
 
-      Distribute(name, message);
+      if (_processors.TryGetValue(descriptor, out MethodInfo processor))
+      {
+        dynamic actor = processor.Invoke(GetInstance(name, processor), new[] { message });
+
+        response = (T)(await actor);
+
+        if (_subscribers.TryGetValue(response.GetType().Name, out Action<object> responseSubscriber))
+        {
+          responseSubscriber(response);
+        }
+      }
 
       return response;
-    }
-
-    /// <summary>
-    /// Send message
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    public virtual Task<T> Send<T>(string name, object message)
-    {
-      return Send(name, message) as Task<T>;
     }
 
     /// <summary>
@@ -177,17 +196,11 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="name"></param>
     /// <param name="message"></param>
+    /// <param name="scheduler"></param>
     /// <returns></returns>
-    public virtual Task<T> Schedule<T>(string name, object message)
+    public virtual Task<T> Send<T>(string name, object message, IMessageScheduler scheduler)
     {
-      var source = new TaskCompletionSource<T>();
-
-      Scheduler.Send(() =>
-      {
-        source.SetResult(Send(name, message).GetAwaiter().GetResult());
-      });
-
-      return source.Task;
+      return scheduler.Send(() => Send<T>(name, message).GetAwaiter().GetResult());
     }
 
     /// <summary>
@@ -198,28 +211,26 @@ namespace Distribution.DomainSpace
     }
 
     /// <summary>
-    /// Distribute message among all actors
+    /// Get instance by composite index
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="message"></param>
-    protected void Distribute(string name, object message)
+    /// <param name="processor"></param>
+    /// <returns></returns>
+    protected virtual object GetInstance(string name, MethodInfo processor)
     {
-      var inputs = new[] { message };
-
-      Observers.ForEach(async observer =>
+      if (_instances.ContainsKey(name))
       {
-        var actor = GetInstance(observer.Key, observer.Value);
-        var processor = observer.Value.Invoke(actor, inputs) as Task;
+        return _instances[name];
+      }
 
-        await processor;
-      });
+      return _instances[name] = Activator.CreateInstance(processor.DeclaringType);
     }
 
     /// <summary>
     /// Get actors
     /// </summary>
     /// <returns></returns>
-    protected IEnumerable<MethodInfo> GetActors()
+    protected virtual IEnumerable<MethodInfo> GetActors()
     {
       return AppDomain
         .CurrentDomain
@@ -231,7 +242,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Create processors
     /// </summary>
-    protected IEnumerable<MethodInfo> CreateProcessors()
+    protected virtual IEnumerable<MethodInfo> CreateProcessors()
     {
       return GetActors().Where(descriptor =>
       {
@@ -249,8 +260,8 @@ namespace Distribution.DomainSpace
 
         if (conditions.All(o => o))
         {
-          Processors[message.ParameterType.Name] = descriptor;
-          Messages[message.ParameterType.FullName] = message.ParameterType;
+          _processors[message.ParameterType.Name] = descriptor;
+          _messages[message.ParameterType.FullName] = message.ParameterType;
 
           return true;
         }
@@ -263,7 +274,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Create observers
     /// </summary>
-    protected IEnumerable<MethodInfo> CreateObservers()
+    protected virtual IEnumerable<MethodInfo> CreateObservers()
     {
       return GetActors().Where(descriptor =>
       {
@@ -281,7 +292,7 @@ namespace Distribution.DomainSpace
 
         if (conditions.All(o => o))
         {
-          Observers[descriptor.DeclaringType.FullName] = descriptor;
+          _observers[descriptor.DeclaringType.FullName] = descriptor;
 
           return true;
         }

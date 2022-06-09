@@ -31,7 +31,7 @@ namespace ServerSpace
 
       // Create local server
 
-      var service = new Service
+      var service = new Distribution.DomainSpace.Server
       {
         Port = port,
         Route = route,

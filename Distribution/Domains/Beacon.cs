@@ -19,14 +19,14 @@ namespace Distribution.DomainSpace
     int Port { get; set; }
 
     /// <summary>
-    /// Endpoint creation stream
-    /// </summary>
-    ISubject<IBoxModel> CreateStream { get; }
-
-    /// <summary>
     /// Endpoint deletion stream
     /// </summary>
     ISubject<IBoxModel> DropStream { get; }
+
+    /// <summary>
+    /// Endpoint creation stream
+    /// </summary>
+    ISubject<IBoxModel> CreateStream { get; }
 
     /// <summary>
     /// Endpoints
@@ -63,15 +63,14 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    IBoxModel GetBox(string name);
+    IBoxModel GetBox(IPEndPoint endpoint);
 
     /// <summary>
     /// Create node reference
     /// </summary>
-    /// <param name="name"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    IBoxModel CreateBox(string name, IPEndPoint endpoint);
+    IBoxModel CreateBox(IPEndPoint endpoint);
   }
 
   public class Beacon : IBeacon
@@ -87,14 +86,14 @@ namespace Distribution.DomainSpace
     public virtual UdpClient Communicator { get; protected set; }
 
     /// <summary>
-    /// Endpoint creation stream
-    /// </summary>
-    public virtual ISubject<IBoxModel> CreateStream { get; protected set; }
-
-    /// <summary>
     /// Endpoint dropping stream
     /// </summary>
     public virtual ISubject<IBoxModel> DropStream { get; protected set; }
+
+    /// <summary>
+    /// Endpoint creation stream
+    /// </summary>
+    public virtual ISubject<IBoxModel> CreateStream { get; protected set; }
 
     /// <summary>
     /// Endpoints
@@ -120,27 +119,24 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Get node reference
     /// </summary>
-    /// <param name="name"></param>
+    /// <param name="endpoint"></param>
     /// <returns></returns>
-    public virtual IBoxModel GetBox(string name)
+    public virtual IBoxModel GetBox(IPEndPoint endpoint)
     {
-      Boxes.TryGetValue(name, out IBoxModel response);
+      Boxes.TryGetValue($"{ endpoint.Address }", out IBoxModel response);
       return response;
     }
 
     /// <summary>
     /// Create node reference
     /// </summary>
-    /// <param name="name"></param>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public virtual IBoxModel CreateBox(string name, IPEndPoint endpoint)
+    public virtual IBoxModel CreateBox(IPEndPoint endpoint)
     {
       return new BoxModel
       {
-        Port = endpoint.Port,
         Time = DateTime.UtcNow,
-        Name = Dns.GetHostEntry(endpoint.Address).HostName,
         Address = $"{ endpoint.Address }"
       };
     }
@@ -195,12 +191,11 @@ namespace Distribution.DomainSpace
 
             if (Equals(name, message))
             {
-              var address = $"{ box.Address }";
-              var item = GetBox(address);
+              var item = GetBox(box);
 
               if (item is null)
               {
-                CreateStream.OnNext(item = Boxes[address] = CreateBox(address, box));
+                CreateStream.OnNext(item = Boxes[$"{box.Address}"] = CreateBox(box));
               }
 
               item.Time = DateTime.UtcNow;

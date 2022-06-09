@@ -1,89 +1,84 @@
 using System;
-using System.Collections.Concurrent;
+using System.Reactive.Concurrency;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Distribution.SchedulerSpace
 {
-  public class MessageScheduler
+  public interface IMessageScheduler : IScheduler
   {
     /// <summary>
-    /// Awaitable action wrapper
+    /// Action processor
     /// </summary>
-    public class Item
-    {
-      public Delegate Action { get; set; }
-      public CancellationTokenSource Cancellation { get; set; }
-      public TaskCompletionSource<dynamic> Completion { get; set; }
-    }
+    /// <param name="action"></param>
+    Task<T> Send<T>(Func<T> action);
+  }
+
+  public class MessageScheduler : IMessageScheduler
+  {
+    /// <summary>
+    /// Scheduler date
+    /// </summary>
+    public virtual DateTimeOffset Now => DateTime.Now;
 
     /// <summary>
-    /// Queue
+    /// Scheduler
     /// </summary>
-    protected BlockingCollection<Item> _queue = new(new ConcurrentQueue<Item>());
+    public virtual EventLoopScheduler Instance { get; protected set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="scheduler"></param>
-    /// <param name="source"></param>
-    public MessageScheduler(TaskScheduler scheduler = null, CancellationTokenSource source = null)
+    public MessageScheduler()
     {
-      var sc = scheduler ?? TaskScheduler.Default;
-      var cancellation = source?.Token ?? CancellationToken.None;
-
-      Task.Factory.StartNew(Consume, cancellation, TaskCreationOptions.LongRunning, sc);
+      Instance = new EventLoopScheduler(o => new Thread(o)
+      {
+        IsBackground = true,
+        Priority = ThreadPriority.Highest,
+        Name = nameof(MessageScheduler)
+      });
     }
 
     /// <summary>
     /// Action processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="cancellation"></param>
-    /// <returns></returns>
-    public virtual Task<dynamic> Send(Delegate action, CancellationTokenSource cancellation = null)
+    public virtual Task<T> Send<T>(Func<T> action)
     {
-      var item = new Item
-      {
-        Action = action,
-        Cancellation = cancellation,
-        Completion = new TaskCompletionSource<dynamic>()
-      };
+      var completion = new TaskCompletionSource<T>();
 
-      _queue.Add(item);
+      Instance.Schedule(() => completion.SetResult(action.Invoke()));
 
-      return item.Completion.Task;
+      return completion.Task;
     }
 
     /// <summary>
-    /// Background process
+    /// Schedule wrapper
     /// </summary>
-    protected virtual void Consume()
-    {
-      foreach (var item in _queue.GetConsumingEnumerable())
-      {
-        var completion = item?.Completion;
-        var cancellation = item?.Cancellation?.Token ?? CancellationToken.None;
+    /// <typeparam name="T"></typeparam>
+    /// <param name="state"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
+    public virtual IDisposable Schedule<T>(T state, Func<IScheduler, T, IDisposable> action) => Instance.Schedule(state, action);
 
-        try
-        {
-          if (cancellation.IsCancellationRequested)
-          {
-            completion.SetCanceled();
-            continue;
-          }
+    /// <summary>
+    /// Schedule wrapper
+    /// </summary>
+    /// <typeparam name="TState"></typeparam>
+    /// <param name="state"></param>
+    /// <param name="dueTime"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
+    public virtual IDisposable Schedule<TState>(TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action) => Instance.Schedule(state, dueTime, action);
 
-          completion.SetResult(item.Action.DynamicInvoke());
-        }
-        catch (OperationCanceledException)
-        {
-          completion.SetCanceled();
-        }
-        catch (Exception e)
-        {
-          completion.SetException(e);
-        }
-      }
-    }
+    /// <summary>
+    /// Schedule wrapper
+    /// </summary>
+    /// <typeparam name="TState"></typeparam>
+    /// <param name="state"></param>
+    /// <param name="dueTime"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
+    public virtual IDisposable Schedule<TState>(TState state, DateTimeOffset dueTime, Func<IScheduler, TState, IDisposable> action) => Instance.Schedule(state, dueTime, action);
   }
 }

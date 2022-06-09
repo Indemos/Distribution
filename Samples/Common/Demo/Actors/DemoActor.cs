@@ -24,6 +24,12 @@ namespace Common
       return Task.FromResult(new DemoResponse { Id = Thread.CurrentThread.ManagedThreadId });
     }
 
+    [Processor]
+    public virtual Task<DemoResponse> GetProcess(CountMessage message)
+    {
+      return Task.FromResult(new DemoResponse { Id = message.Id });
+    }
+
     [Observer]
     public virtual Task Subscribe(dynamic message)
     {

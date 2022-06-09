@@ -1,24 +1,22 @@
+using Distribution.CommunicatorSpace;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Hosting;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.CookiePolicy;
-using Distribution.DomainSpace;
-using Distribution.CommunicatorSpace;
-using Microsoft.AspNetCore.Hosting.Server.Features;
-using System.Net;
 using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Distribution.DomainSpace
 {
-  public interface IService : IDisposable
+  public interface IServer : IDisposable
   {
     /// <summary>
     /// Port for communication
@@ -48,7 +46,7 @@ namespace Distribution.DomainSpace
     Task Run();
   }
 
-  public class Service : IService
+  public class Server : IServer
   {
     /// <summary>
     /// Port for communication
@@ -73,7 +71,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Constructor
     /// </summary>
-    public Service()
+    public Server()
     {
       Port = 0;
       Route = "/messages";
