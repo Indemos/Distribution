@@ -208,6 +208,13 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
+      _messages?.Clear();
+      _instances?.Clear();
+      _observers?.Clear();
+      _processors?.Clear();
+      _subscribers?.Clear();
+
+      Scheduler?.Dispose();
     }
 
     /// <summary>

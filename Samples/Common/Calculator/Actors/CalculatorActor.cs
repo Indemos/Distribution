@@ -21,7 +21,7 @@ namespace Common
 
       var response = new OperationResponse
       {
-        Value = message.Input,
+        Value = _response,
         Operation = nameof(Increment)
       };
 
@@ -37,7 +37,7 @@ namespace Common
 
       var response = new OperationResponse
       {
-        Value = message.Input,
+        Value = _response,
         Operation = nameof(Decrement)
       };
 

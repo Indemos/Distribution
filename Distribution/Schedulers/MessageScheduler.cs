@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Distribution.SchedulerSpace
 {
-  public interface IMessageScheduler : IScheduler
+  public interface IMessageScheduler : IScheduler, IDisposable
   {
     /// <summary>
     /// Action processor
@@ -80,5 +80,14 @@ namespace Distribution.SchedulerSpace
     /// <param name="action"></param>
     /// <returns></returns>
     public virtual IDisposable Schedule<TState>(TState state, DateTimeOffset dueTime, Func<IScheduler, TState, IDisposable> action) => Instance.Schedule(state, dueTime, action);
+
+    /// <summary>
+    /// Dispose
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public void Dispose()
+    {
+      Instance?.Dispose();
+    }
   }
 }

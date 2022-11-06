@@ -29,35 +29,26 @@ namespace ClientSpace
       var message = new CreateMessage { Name = "Local Message" };
       var response = await scene.Send<DemoResponse>("Local Actor", message);
 
-      Console.WriteLine("Local Response : " + response.Data + Environment.NewLine);
+      Console.WriteLine("Local message : " + response.Data + Environment.NewLine);
 
       // Calculator actor
 
-      Console.WriteLine("Calculator" + Environment.NewLine);
+      Console.WriteLine("Calculator");
 
-      var count = 5;
+      var amountStart = await scene.Send<OperationResponse>(nameof(CalculatorActor), new SummaryMessage());
+      Console.WriteLine(Environment.NewLine + "Amount : " + amountStart.Value + Environment.NewLine);
 
-      Enumerable.Range(0, count).ForEach(async o =>
-      {
-        switch (true)
-        {
-          case true when o > count / 2:
+      var inc1 = await scene.Send<OperationResponse>(nameof(CalculatorActor), new IncrementMessage { Input = 1 });
+      Console.WriteLine("Amount + 1 = " + inc1.Value);
 
-            var inc = await scene.Send<OperationResponse>(nameof(CalculatorActor), new IncrementMessage { Input = o });
-            Console.WriteLine("Op : " + inc.Operation + " " + inc.Value);
-            break;
+      var inc2 = await scene.Send<OperationResponse>(nameof(CalculatorActor), new IncrementMessage { Input = 2 });
+      Console.WriteLine("Amount + 2 = " + inc2.Value);
 
-          case true when o < count / 2:
+      var dec = await scene.Send<OperationResponse>(nameof(CalculatorActor), new DecrementMessage { Input = 1 });
+      Console.WriteLine("Amount - 1 = " + dec.Value);
 
-            var dec = await scene.Send<OperationResponse>(nameof(CalculatorActor), new DecrementMessage { Input = o });
-            Console.WriteLine("Op : " + dec.Operation + " " + dec.Value);
-            break;
-        }
-      });
-
-      var calculation = await scene.Send<OperationResponse>(nameof(CalculatorActor), new SummaryMessage());
-
-      Console.WriteLine(Environment.NewLine + "Amount : " + calculation.Value + Environment.NewLine);
+      var amountEnd = await scene.Send<OperationResponse>(nameof(CalculatorActor), new SummaryMessage());
+      Console.WriteLine(Environment.NewLine + "Amount : " + amountEnd.Value + Environment.NewLine);
     }
 
     /// <summary>
@@ -108,7 +99,7 @@ namespace ClientSpace
       {
         var response = await cluster.Send<DemoResponse>("Virtual Cluster Actor", message);
 
-        Console.WriteLine("Cluster Response : " + response.Data);
+        Console.WriteLine("Cluster message : " + response.Data);
       });
     }
   }
