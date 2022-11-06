@@ -1,11 +1,10 @@
 using Distribution.AttributeSpace;
-using Distribution.SchedulerSpace;
+using ScheduleSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -200,7 +199,7 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual Task<T> Send<T>(string name, object message, IMessageScheduler scheduler)
     {
-      return scheduler.Send(() => Send<T>(name, message).GetAwaiter().GetResult());
+      return scheduler.Send(() => Send<T>(name, message).GetAwaiter().GetResult()).Task;
     }
 
     /// <summary>

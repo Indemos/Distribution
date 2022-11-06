@@ -21,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Schedule" Version="1.0.0-prerelease" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0-preview.1.22076.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.1.22076.8" />
