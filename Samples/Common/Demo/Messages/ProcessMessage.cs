@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class ProcessMessage
+  public struct ProcessMessage
   {
     public int Id { get; set; }
   }

@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class CreateMessage
+  public struct CreateMessage
   {
     public string Name { get; set; }
   }

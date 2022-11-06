@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Common
 {
-  public class OperationResponse
+  public struct OperationResponse
   {
     public double Value { get; set; }
     public string Operation { get; set; }

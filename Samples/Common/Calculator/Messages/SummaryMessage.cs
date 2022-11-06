@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class SummaryMessage
+  public struct SummaryMessage
   {
   }
 }

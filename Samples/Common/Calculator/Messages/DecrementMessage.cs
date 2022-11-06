@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class DecrementMessage
+  public struct DecrementMessage
   {
     public double Input { get; set; }
   }

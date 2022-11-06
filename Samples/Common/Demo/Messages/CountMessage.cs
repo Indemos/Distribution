@@ -1,6 +1,6 @@
 namespace Common
 {
-  public class CountMessage
+  public struct CountMessage
   {
     public int Id { get; set; }
   }
