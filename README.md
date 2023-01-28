@@ -24,7 +24,7 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
 - No use of locks
 
-# Package
+# Status
 
 ```
 Install-Package Distribution
