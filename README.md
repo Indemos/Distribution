@@ -24,11 +24,15 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
 - No use of locks
 
-# Nuget
+# Package
 
 ```
 Install-Package Distribution
 ```
+
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/Indemos/Distribution/dotnet.yml?event=push)
+![GitHub](https://img.shields.io/github/license/Indemos/Distribution)
+![GitHub](https://img.shields.io/badge/system-Windows%20%7C%20Linux%20%7C%20Mac-blue)
 
 # Sample 
 
