@@ -2,7 +2,6 @@ using Common;
 using Distribution.CommunicatorSpace;
 using Distribution.DomainSpace;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ClientSpace
