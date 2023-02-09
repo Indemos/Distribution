@@ -6,6 +6,16 @@ The two mentioned frameworks are the closest to what I would like to use, but th
 Below is the list of features built in the current framework. 
 Each of them can be considered as an advantage or a disadvantage depending on specific use-case. 
 
+# Status
+
+```
+Install-Package Distribution
+```
+
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/Indemos/Distribution/dotnet.yml?event=push)
+![GitHub](https://img.shields.io/github/license/Indemos/Distribution)
+![GitHub](https://img.shields.io/badge/system-Windows%20%7C%20Linux%20%7C%20Mac-blue)
+
 # Features
 
 - Single thread 
@@ -23,12 +33,6 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 - Usage of `Task` methods instead of FIFO loops for asynchronous communication 
 - Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
 - No use of locks
-
-# Nuget
-
-```
-Install-Package Distribution
-```
 
 # Sample 
 
