@@ -1,6 +1,5 @@
 using Common;
 using Distribution.DomainSpace;
-using System.Reactive.Linq;
 
 namespace Tests
 {
