@@ -72,6 +72,8 @@ public class Client
 
 An example with a distributed network of actors in the cluster is a bit more complex and can be found in the [Samples](https://github.com/Indemos/Distribution/tree/main/Samples) directory.
 
+Also, can be used as an [alternative](https://github.com/Indemos/Distribution/tree/main/StoreSamples) to RX.NET.
+
 # Disclaimer
 
 In order to keep things simple and flexible, the main focus was on simplicity and scalability rather than performance. 
