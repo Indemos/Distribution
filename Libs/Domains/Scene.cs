@@ -18,7 +18,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    IMessageScheduler Scheduler { get; }
+    IMessageScheduler Scheduler { get; set;  }
 
     /// <summary>
     /// Get message descriptor
@@ -91,7 +91,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    public virtual IMessageScheduler Scheduler { get; protected set; }
+    public virtual IMessageScheduler Scheduler { get; set; }
 
     /// <summary>
     /// Constructor
