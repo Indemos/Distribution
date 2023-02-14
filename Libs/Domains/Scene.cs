@@ -18,7 +18,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    IMessageScheduler Scheduler { get; set;  }
+    BackgroundRunner Scheduler { get; set;  }
 
     /// <summary>
     /// Get message descriptor
@@ -55,7 +55,7 @@ namespace Distribution.DomainSpace
     /// <param name="message"></param>
     /// <param name="scheduler"></param>
     /// <returns></returns>
-    Task<T> Send<T>(string name, object message, IMessageScheduler scheduler);
+    Task<T> Send<T>(string name, object message, BackgroundRunner scheduler);
   }
 
   /// <summary>
@@ -91,14 +91,14 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    public virtual IMessageScheduler Scheduler { get; set; }
+    public virtual BackgroundRunner Scheduler { get; set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
     public Scene()
     {
-      Scheduler = new MessageScheduler();
+      Scheduler = new BackgroundRunner();
 
       _messages = new ConcurrentDictionary<string, Type>();
       _instances = new ConcurrentDictionary<string, object>();
@@ -197,7 +197,7 @@ namespace Distribution.DomainSpace
     /// <param name="message"></param>
     /// <param name="scheduler"></param>
     /// <returns></returns>
-    public virtual Task<T> Send<T>(string name, object message, IMessageScheduler scheduler)
+    public virtual Task<T> Send<T>(string name, object message, BackgroundRunner scheduler)
     {
       return scheduler.Send(() => Send<T>(name, message).GetAwaiter().GetResult()).Task;
     }
