@@ -1,5 +1,6 @@
 using Common;
 using Distribution.DomainSpace;
+using System;
 
 namespace Tests
 {
@@ -25,28 +26,29 @@ namespace Tests
     {
       var scene = new Scene();
       var scheduler = scene.Scheduler;
-      var x1 = Thread.CurrentThread.ManagedThreadId;
-      var x2 = scene.Send<DemoResponse>("A", new ProcessMessage(), scheduler).Result.Id;
-      var x3 = Task.Run(() => scene.Send<DemoResponse>("B", new ProcessMessage(), scheduler).Result.Id).Result;
-      var x4 = Task.Run(() => scene.Send<DemoResponse>("C", new ProcessMessage(), scheduler).Result.Id).Result;
 
-      Assert.AreNotEqual(x1, x2);
-      Assert.AreEqual(x2, x3);
-      Assert.AreEqual(x3, x4);
+      Func<string, Task<DemoResponse>> syncActor = name => scene.Send<DemoResponse>(name, new ProcessMessage());
+
+      var processId = Thread.CurrentThread.ManagedThreadId;
+      var asyncProcessId = scheduler.Send(() => Thread.CurrentThread.ManagedThreadId).Task;
+      var asyncActor = scheduler.Send(() => syncActor("B").Result.Id).Task;
+      var asyncActorInsideTask = Task.Run(() => scheduler.Send(() => syncActor("C").Result.Id).Task);
+
+      Assert.AreEqual(processId, syncActor("A").Result.Id);
+      Assert.AreNotEqual(processId, asyncProcessId.Result);
+      Assert.AreEqual(asyncProcessId.Result, asyncActor.Result);
+      Assert.AreEqual(asyncProcessId.Result, asyncActorInsideTask.Result);
     }
 
     [TestMethod]
     public void RunStream()
     {
-      var id = -1;
       var scene = new Scene();
       var message = new CountMessage { Id = 5 };
 
       scene.Subscribe<CountMessage>(o => Assert.AreEqual(message.Id, o.Id));
       scene.Subscribe<DemoResponse>(o => Assert.AreEqual(message.Id, o.Id));
       scene.Subscribe<Scene>(o => throw new Exception("Message does not exist"));
-
-      id = scene.Send<DemoResponse>("A", message).Result.Id;
     }
   }
 }

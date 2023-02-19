@@ -1,3 +1,5 @@
+using Distribution.ExtensionSpace;
+using Distribution.ModelSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -5,9 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Text;
-using Distribution.ModelSpace;
 
 namespace Distribution.DomainSpace
 {
@@ -21,17 +21,17 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Endpoint deletion stream
     /// </summary>
-    ISubject<IBoxModel> DropStream { get; }
+    Action<InstanceModel> DropStream { get; }
 
     /// <summary>
     /// Endpoint creation stream
     /// </summary>
-    ISubject<IBoxModel> CreateStream { get; }
+    Action<InstanceModel> CreateStream { get; }
 
     /// <summary>
     /// Endpoints
     /// </summary>
-    ConcurrentDictionary<string, IBoxModel> Boxes { get; }
+    ConcurrentDictionary<string, InstanceModel> Instances { get; }
 
     /// <summary>
     /// Clear unresponsive nodes
@@ -59,18 +59,11 @@ namespace Distribution.DomainSpace
     IDisposable Locate(string name, int port, TimeSpan createSpan, TimeSpan dropSpan);
 
     /// <summary>
-    /// Get node reference
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    IBoxModel GetBox(IPEndPoint endpoint);
-
-    /// <summary>
     /// Create node reference
     /// </summary>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    IBoxModel CreateBox(IPEndPoint endpoint);
+    InstanceModel CreateInstance(IPEndPoint endpoint);
   }
 
   public class Beacon : IBeacon
@@ -83,22 +76,22 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// UDP client
     /// </summary>
-    public virtual UdpClient Communicator { get; protected set; }
+    public virtual UdpClient Communicator { get; set; }
 
     /// <summary>
     /// Endpoint dropping stream
     /// </summary>
-    public virtual ISubject<IBoxModel> DropStream { get; protected set; }
+    public virtual Action<InstanceModel> DropStream { get; set; }
 
     /// <summary>
     /// Endpoint creation stream
     /// </summary>
-    public virtual ISubject<IBoxModel> CreateStream { get; protected set; }
+    public virtual Action<InstanceModel> CreateStream { get; set; }
 
     /// <summary>
     /// Endpoints
     /// </summary>
-    public virtual ConcurrentDictionary<string, IBoxModel> Boxes { get; protected set; }
+    public virtual ConcurrentDictionary<string, InstanceModel> Instances { get; set; }
 
     /// <summary>
     /// Constructor
@@ -106,9 +99,9 @@ namespace Distribution.DomainSpace
     public Beacon()
     {
       Port = 2000;
-      DropStream = new Subject<IBoxModel>();
-      CreateStream = new Subject<IBoxModel>();
-      Boxes = new ConcurrentDictionary<string, IBoxModel>();
+      DropStream = o => { };
+      CreateStream = o => { };
+      Instances = new ConcurrentDictionary<string, InstanceModel>();
       Communicator = new UdpClient(AddressFamily.InterNetwork)
       {
         EnableBroadcast = true,
@@ -117,24 +110,13 @@ namespace Distribution.DomainSpace
     }
 
     /// <summary>
-    /// Get node reference
-    /// </summary>
-    /// <param name="endpoint"></param>
-    /// <returns></returns>
-    public virtual IBoxModel GetBox(IPEndPoint endpoint)
-    {
-      Boxes.TryGetValue($"{ endpoint.Address }", out IBoxModel response);
-      return response;
-    }
-
-    /// <summary>
     /// Create node reference
     /// </summary>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public virtual IBoxModel CreateBox(IPEndPoint endpoint)
+    public virtual InstanceModel CreateInstance(IPEndPoint endpoint)
     {
-      return new BoxModel
+      return new InstanceModel
       {
         Time = DateTime.UtcNow,
         Address = $"{ endpoint.Address }"
@@ -146,7 +128,7 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
-      Boxes?.Clear();
+      Instances?.Clear();
       Communicator?.Dispose();
     }
 
@@ -186,16 +168,16 @@ namespace Distribution.DomainSpace
           Communicator.ReceiveAsync().ContinueWith(async o =>
           {
             var response = await o;
-            var box = response.RemoteEndPoint;
+            var instance = response.RemoteEndPoint;
             var message = Encoding.UTF8.GetString(response.Buffer);
 
             if (Equals(name, message))
             {
-              var item = GetBox(box);
+              var item = Instances.Get($"{endpoint.Address}");
 
-              if (item is null)
+              if (item.Address is null)
               {
-                CreateStream.OnNext(item = Boxes[$"{box.Address}"] = CreateBox(box));
+                CreateStream(item = Instances[$"{instance.Address}"] = CreateInstance(instance));
               }
 
               item.Time = DateTime.UtcNow;
@@ -211,11 +193,11 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual void Drop(TimeSpan dropTime)
     {
-      Boxes = new ConcurrentDictionary<string, IBoxModel>(Boxes.Where(item =>
+      Instances = new ConcurrentDictionary<string, InstanceModel>(Instances.Where(item =>
       {
         if (DateTime.UtcNow.Ticks - item.Value.Time.Value.Ticks > dropTime.Ticks)
         {
-          DropStream.OnNext(item.Value);
+          DropStream(item.Value);
           return false;
         }
 

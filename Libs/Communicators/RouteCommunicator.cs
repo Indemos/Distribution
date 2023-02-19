@@ -116,7 +116,7 @@ namespace Distribution.CommunicatorSpace
           var content = context.Request.Body;
           var envelope = await Decode<EnvelopeModel>(content);
 
-          if (envelope is not null)
+          if (envelope.Descriptor is not null)
           {
             var descriptor = Scene.GetMessage(envelope.Descriptor);
             var message = Decode($"{ envelope.Message }", descriptor);

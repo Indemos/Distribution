@@ -28,14 +28,14 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Instances
     /// </summary>
-    ConcurrentDictionary<string, IBoxModel> Instances { get; }
+    ConcurrentDictionary<string, InstanceModel> Instances { get; }
 
     /// <summary>
     /// Get endpoint
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    IBoxModel GetInstance(string name);
+    InstanceModel GetInstance(string name);
 
     /// <summary>
     /// Send message
@@ -66,7 +66,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Instances
     /// </summary>
-    public virtual ConcurrentDictionary<string, IBoxModel> Instances { get; protected set; }
+    public virtual ConcurrentDictionary<string, InstanceModel> Instances { get; protected set; }
 
     /// <summary>
     /// Constructor
@@ -74,7 +74,7 @@ namespace Distribution.DomainSpace
     public Cluster()
     {
       Route = "/messages";
-      Instances = new ConcurrentDictionary<string, IBoxModel>();
+      Instances = new ConcurrentDictionary<string, InstanceModel>();
     }
 
     /// <summary>
@@ -82,9 +82,9 @@ namespace Distribution.DomainSpace
     /// </summary>
     public virtual void Dispose()
     {
-      Instances.Clear();
       Beacon?.Dispose();
       Communicator?.Dispose();
+      Instances.Clear();
     }
 
     /// <summary>
@@ -92,21 +92,21 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public virtual IBoxModel GetInstance(string name)
+    public virtual InstanceModel GetInstance(string name)
     {
-      if (Beacon.Boxes.IsEmpty)
+      if (Beacon.Instances.IsEmpty)
       {
-        return null;
+        return default;
       }
 
-      if (Instances.TryGetValue(name, out IBoxModel source) && Beacon.Boxes.ContainsKey(source.Address))
+      if (Instances.TryGetValue(name, out var instance) && Beacon.Instances.ContainsKey(instance.Address))
       {
-        return source;
+        return instance;
       }
 
       var generator = new Random();
-      var index = generator.Next(0, Beacon.Boxes.Count - 1);
-      var endpoint = Beacon.Boxes.Values.ElementAt(index);
+      var index = generator.Next(0, Beacon.Instances.Count - 1);
+      var endpoint = Beacon.Instances.Values.ElementAt(index);
 
       return Instances[name] = endpoint;
     }
@@ -119,13 +119,13 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual Task<T> Send<T>(string name, dynamic message)
     {
-      if (Beacon.Boxes.IsEmpty)
+      var instance = GetInstance(name);
+      var source = new UriBuilder(null, instance.Address, Beacon.Port, Route);
+
+      if (instance.Address is null)
       {
         return Task.FromResult<T>(default);
       }
-
-      var address = GetInstance(name).Address;
-      var source = new UriBuilder(null, address, Beacon.Port, Route);
 
       return Communicator.Send<T>($"{ source }", name, message, null, null);
     }

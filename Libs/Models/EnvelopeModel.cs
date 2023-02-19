@@ -1,16 +1,9 @@
 namespace Distribution.ModelSpace
 {
-  public interface IEnvelopeModel
+  public struct EnvelopeModel
   {
-    string Name { get; set; }
-    string Descriptor { get; set; }
-    object Message { get; set; }
-  }
-
-  public class EnvelopeModel : IEnvelopeModel
-  {
-    public virtual string Name { get; set; }
-    public virtual string Descriptor { get; set; }
-    public virtual object Message { get; set; }
+    public string Name { get; set; }
+    public string Descriptor { get; set; }
+    public object Message { get; set; }
   }
 }

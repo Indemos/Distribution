@@ -1,9 +1,11 @@
 using Distribution.AttributeSpace;
+using Distribution.ModelSpace;
 using ScheduleSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -18,7 +20,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    BackgroundRunner Scheduler { get; set;  }
+    BackgroundRunner Scheduler { get; set; }
 
     /// <summary>
     /// Get message descriptor
@@ -47,15 +49,6 @@ namespace Distribution.DomainSpace
     /// <param name="message"></param>
     /// <returns></returns>
     Task<T> Send<T>(string name, object message);
-
-    /// <summary>
-    /// Send message to separate process
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="message"></param>
-    /// <param name="scheduler"></param>
-    /// <returns></returns>
-    Task<T> Send<T>(string name, object message, BackgroundRunner scheduler);
   }
 
   /// <summary>
@@ -66,27 +59,27 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Messages
     /// </summary>
-    protected IDictionary<string, Type> _messages = null;
+    protected IDictionary<string, Type> _messages;
 
     /// <summary>
     /// Activations
     /// </summary>
-    protected IDictionary<string, object> _instances = null;
+    protected IDictionary<string, object> _instances;
 
     /// <summary>
     /// Observers
     /// </summary>
-    protected IDictionary<string, MethodInfo> _observers = null;
+    protected IDictionary<string, ActorModel> _observers;
 
     /// <summary>
     /// Observers that can provide response
     /// </summary>
-    protected IDictionary<string, MethodInfo> _processors = null;
+    protected IDictionary<string, ActorModel> _processors;
 
     /// <summary>
     /// Message subscribers
     /// </summary>
-    protected IDictionary<string, Action<object>> _subscribers = null;
+    protected IDictionary<string, Action<object>> _subscribers;
 
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
@@ -102,8 +95,8 @@ namespace Distribution.DomainSpace
 
       _messages = new ConcurrentDictionary<string, Type>();
       _instances = new ConcurrentDictionary<string, object>();
-      _observers = new ConcurrentDictionary<string, MethodInfo>();
-      _processors = new ConcurrentDictionary<string, MethodInfo>();
+      _observers = new ConcurrentDictionary<string, ActorModel>();
+      _processors = new ConcurrentDictionary<string, ActorModel>();
       _subscribers = new ConcurrentDictionary<string, Action<object>>();
 
       CreateProcessors();
@@ -115,10 +108,7 @@ namespace Distribution.DomainSpace
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public virtual Type GetMessage(string name)
-    {
-      return _messages[name];
-    }
+    public virtual Type GetMessage(string name) => _messages[name];
 
     /// <summary>
     /// Subscribe to messages
@@ -127,7 +117,13 @@ namespace Distribution.DomainSpace
     /// <returns></returns>
     public virtual void Subscribe<T>(Action<T> action)
     {
-      _subscribers[typeof(T).Name] = o => action((T)o);
+      var message = typeof(T).Name;
+
+      switch (_subscribers.ContainsKey(message))
+      {
+        case true: _subscribers[message] += o => action((T)o); break;
+        case false: _subscribers[message] = o => action((T)o); break;
+      }
     }
 
     /// <summary>
@@ -139,15 +135,15 @@ namespace Distribution.DomainSpace
       var inputs = new[] { message };
       var descriptor = message.GetType().Name;
 
-      if (_subscribers.TryGetValue(descriptor, out Action<object> messageSubscriber))
+      if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
-        messageSubscriber(message);
+        subscriber(message);
       }
 
       Parallel.ForEach(_observers, async observer =>
       {
-        var actor = GetInstance(observer.Key, observer.Value);
-        var processor = observer.Value.Invoke(actor, inputs) as Task;
+        var actor = GetInstance(observer.Key, observer.Value.Descriptor);
+        var processor = observer.Value.Descriptor.Invoke(actor, inputs) as Task;
 
         await processor;
       });
@@ -170,36 +166,24 @@ namespace Distribution.DomainSpace
 
       var descriptor = message.GetType().Name;
 
-      if (_subscribers.TryGetValue(descriptor, out Action<object> messageSubscriber))
+      if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
-        messageSubscriber(message);
+        subscriber(message);
       }
 
-      if (_processors.TryGetValue(descriptor, out MethodInfo processor))
+      if (_processors.TryGetValue(descriptor, out var processor))
       {
-        dynamic actor = processor.Invoke(GetInstance(name, processor), new[] { message });
+        dynamic actor = processor.Descriptor.Invoke(GetInstance(name, processor.Descriptor), new[] { message });
 
-        response = (T)(await actor);
+        response = await actor;
 
-        if (_subscribers.TryGetValue(response.GetType().Name, out Action<object> responseSubscriber))
+        if (_subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
         {
           responseSubscriber(response);
         }
       }
 
       return response;
-    }
-
-    /// <summary>
-    /// Send message to separate process
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="message"></param>
-    /// <param name="scheduler"></param>
-    /// <returns></returns>
-    public virtual Task<T> Send<T>(string name, object message, BackgroundRunner scheduler)
-    {
-      return scheduler.Send(() => Send<T>(name, message).GetAwaiter().GetResult()).Task;
     }
 
     /// <summary>
@@ -266,8 +250,11 @@ namespace Distribution.DomainSpace
 
         if (conditions.All(o => o))
         {
-          _processors[message.ParameterType.Name] = descriptor;
           _messages[message.ParameterType.FullName] = message.ParameterType;
+          _processors[message.ParameterType.Name] = new ActorModel
+          {
+            Descriptor = descriptor
+          };
 
           return true;
         }
@@ -298,7 +285,10 @@ namespace Distribution.DomainSpace
 
         if (conditions.All(o => o))
         {
-          _observers[descriptor.DeclaringType.FullName] = descriptor;
+          _observers[descriptor.DeclaringType.FullName] = new ActorModel
+          {
+            Descriptor = descriptor
+          };
 
           return true;
         }
@@ -306,6 +296,24 @@ namespace Distribution.DomainSpace
         return false;
 
       }).ToList();
+    }
+
+    /// <summary>
+    /// Compile processor into delegate
+    /// </summary>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    protected virtual Delegate CreateAction(MethodInfo descriptor)
+    {
+      var arguments = descriptor
+        .GetParameters()
+        .Select(o => o.ParameterType)
+        .Concat(new[] { descriptor.ReturnType })
+        .ToArray();
+
+      return descriptor.CreateDelegate(
+        Expression.GetDelegateType(arguments),
+        Activator.CreateInstance(descriptor.DeclaringType));
     }
   }
 }

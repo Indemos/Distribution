@@ -89,17 +89,13 @@ namespace ClientSpace
         Communicator = communicator
       };
 
-      beacon.DropStream.Subscribe(o =>
-      {
-        Console.WriteLine("Drop : " + o.Address);
-      });
-
-      beacon.CreateStream.Subscribe(async o =>
+      beacon.DropStream += o => Console.WriteLine("Drop : " + o.Address);
+      beacon.CreateStream += async o =>
       {
         var response = await cluster.Send<DemoResponse>("Virtual Cluster Actor", message);
 
         Console.WriteLine("Cluster message : " + response.Data);
-      });
+      };
     }
   }
 }
