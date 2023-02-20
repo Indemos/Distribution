@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.1.6-prerelease</Version>
+    <Version>1.1.7-prerelease</Version>
     <Description>General purpose virtual actor framework for peer-to-peer microservices or in-process communication within the same app with possible extension to blockchains.</Description>
     <Authors>artemiusgreat</Authors>
     <Copyright>indemos.com</Copyright>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Schedule" Version="1.0.5-prerelease" />
+    <PackageReference Include="Schedule" Version="1.0.7-prerelease" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0-preview.1.22076.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.1.22076.8" />
