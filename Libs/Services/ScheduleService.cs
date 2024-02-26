@@ -92,6 +92,30 @@ namespace Distribution.ServiceSpace
     }
 
     /// <summary>
+    /// Delegate processor
+    /// </summary>
+    /// <param name="action"></param>
+    public virtual TaskCompletionSource Send(Func<Task> action)
+    {
+      var completion = new TaskCompletionSource();
+
+      Enqueue(() =>
+      {
+        try
+        {
+          action().GetAwaiter().GetResult();
+          completion.TrySetResult();
+        }
+        catch (Exception e)
+        {
+          completion.TrySetException(e);
+        }
+      });
+
+      return completion;
+    }
+
+    /// <summary>
     /// Task delegate processor
     /// </summary>
     /// <param name="action"></param>
