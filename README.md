@@ -2,7 +2,7 @@
 
 There is decent amount of actor-like frameworks, including those that support an idea of Virtual Actors, e.g. `Orleans` and `Proto.Actor` 
 
-The two mentioned frameworks are the closest to what I would like to use, but they have some drawbacks, like extra build step or inability to use different transport protocol. 
+The two mentioned frameworks are the most flexible but have some drawbacks, like extra build step or inability to use different transport protocol. 
 Below is the list of features built in the current framework. 
 Each of them can be considered as an advantage or a disadvantage depending on specific use-case. 
 
