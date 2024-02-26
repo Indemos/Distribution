@@ -14,7 +14,15 @@ namespace Distribution.ServiceSpace
     /// Constructor
     /// </summary>
     /// <param name="scheduler"></param>
-    public ScheduleService(TaskScheduler scheduler = null)
+    public ScheduleService() : this(TaskScheduler.Default)
+    {
+    }
+
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="scheduler"></param>
+    public ScheduleService(TaskScheduler scheduler)
     {
       Queue = new();
       Cancellation = new CancellationTokenSource();
