@@ -1,13 +1,13 @@
 using Distribution.ExtensionSpace;
 using Distribution.ModelSpace;
+using Distribution.ServiceSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
 using System.Text;
+using System.Timers;
 
 namespace Distribution.DomainSpace
 {
@@ -160,30 +160,34 @@ namespace Distribution.DomainSpace
 
       Communicator.Client.Bind(endpoint);
 
-      return Observable
-        .Interval(createSpan, new EventLoopScheduler())
-        .Subscribe(o =>
+      var interval = new Timer(createSpan);
+      var scheduler = new ScheduleService();
+
+      interval.Enabled = true;
+      interval.Elapsed += (sender, e) => scheduler.Send(() => 
+      {
+        Drop(dropSpan);
+        Communicator.ReceiveAsync().ContinueWith(async o =>
         {
-          Drop(dropSpan);
-          Communicator.ReceiveAsync().ContinueWith(async o =>
+          var response = await o;
+          var instance = response.RemoteEndPoint;
+          var message = Encoding.UTF8.GetString(response.Buffer);
+
+          if (Equals(name, message))
           {
-            var response = await o;
-            var instance = response.RemoteEndPoint;
-            var message = Encoding.UTF8.GetString(response.Buffer);
+            var item = Instances.Get($"{endpoint.Address}");
 
-            if (Equals(name, message))
+            if (item.Address is null)
             {
-              var item = Instances.Get($"{endpoint.Address}");
-
-              if (item.Address is null)
-              {
-                CreateStream(item = Instances[$"{instance.Address}"] = CreateInstance(instance));
-              }
-
-              item.Time = DateTime.UtcNow;
+              CreateStream(item = Instances[$"{instance.Address}"] = CreateInstance(instance));
             }
-          });
+
+            item.Time = DateTime.UtcNow;
+          }
         });
+      });
+
+      return interval;
     }
 
     /// <summary>

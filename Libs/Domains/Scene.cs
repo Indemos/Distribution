@@ -1,12 +1,11 @@
 using Distribution.AttributeSpace;
 using Distribution.ModelSpace;
-using Schedule.RunnerSpace;
+using Distribution.ServiceSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -20,7 +19,7 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    BackgroundRunner Scheduler { get; set; }
+    ScheduleService Scheduler { get; set; }
 
     /// <summary>
     /// Get message descriptor
@@ -84,14 +83,14 @@ namespace Distribution.DomainSpace
     /// <summary>
     /// Scheduler to execute tasks in a dedicated thread
     /// </summary>
-    public virtual BackgroundRunner Scheduler { get; set; }
+    public virtual ScheduleService Scheduler { get; set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
     public Scene()
     {
-      Scheduler = new BackgroundRunner();
+      Scheduler = new ScheduleService();
 
       _messages = new ConcurrentDictionary<string, Type>();
       _instances = new ConcurrentDictionary<string, object>();
