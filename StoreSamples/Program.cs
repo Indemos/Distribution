@@ -24,19 +24,19 @@ namespace ReactiveStore
       scene.Subscribe<AccountSelector>(o => Console.WriteLine($"Transaction subscription for {o.Name} is {o.Amount}"));
 
       response = await scene.Send<AccountSelector>(storeX, new DepositAction { Name = "A", Amount = 100 });
-      Console.WriteLine($"Deposit {response.Amount} to A {Environment.NewLine}");
+      Console.WriteLine($"Deposit 100 to A");
 
       response = await scene.Send<AccountSelector>(storeX, new WithdrawAction { Name = "A", Amount = 50 });
-      Console.WriteLine($"Withdraw {response.Amount} to A {Environment.NewLine}");
+      Console.WriteLine($"Withdraw 50 from A");
 
       response = await scene.Send<AccountSelector>(storeX, new DepositAction { Name = "B", Amount = 100 });
-      Console.WriteLine($"Deposit {response.Amount} to A {Environment.NewLine}");
+      Console.WriteLine($"Deposit 100 to B");
 
       response = await scene.Send<AccountSelector>(storeX, new DepositAction { Name = "A", Amount = 100 });
-      Console.WriteLine($"Deposit {response.Amount} to A {Environment.NewLine}");
+      Console.WriteLine($"Deposit 100 to A");
 
-      response = await scene.Send<AccountSelector>(storeY, new DepositAction { Name = "C", Amount = 50 });
-      Console.WriteLine($"Deposit {response.Amount} to C in store Y {Environment.NewLine}");
+      response = await scene.Send<AccountSelector>(storeY, new DepositAction { Name = "C", Amount = 1000 });
+      Console.WriteLine($"Deposit 1000 to C in store Y");
 
       var balanceA = await scene.Send<AccountStatusSelector>(storeX, new StatusAction { Name = "A" });
       Console.WriteLine($"Balance for A is {balanceA.Amount}");

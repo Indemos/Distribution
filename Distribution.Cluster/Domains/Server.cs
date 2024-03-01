@@ -1,4 +1,4 @@
-using Distribution.CommunicatorSpace;
+using Distribution.Cluster.CommunicatorSpace;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Hosting;
@@ -14,7 +14,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Distribution.DomainSpace
+namespace Distribution.Cluster.DomainSpace
 {
   public interface IServer : IDisposable
   {

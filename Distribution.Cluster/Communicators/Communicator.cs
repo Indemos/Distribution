@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Distribution.CommunicatorSpace
+namespace Distribution.Cluster.CommunicatorSpace
 {
   public interface ICommunicator : IDisposable
   {
@@ -94,22 +94,21 @@ namespace Distribution.CommunicatorSpace
     }
 
     /// <summary>
+    /// Dispose
+    /// </summary>
+    public virtual void Dispose() => Disconnect();
+
+    /// <summary>
     /// Connect
     /// </summary>
     /// <returns></returns>
-    public virtual Task Connect()
-    {
-      return Task.FromResult(0);
-    }
+    public virtual Task Connect() => Task.FromResult(0);
 
     /// <summary>
     /// Disconnect
     /// </summary>
     /// <returns></returns>
-    public virtual Task Disconnect()
-    {
-      return Task.FromResult(0);
-    }
+    public virtual Task Disconnect() => Task.FromResult(0);
 
     /// <summary>
     /// Send message
@@ -121,16 +120,13 @@ namespace Distribution.CommunicatorSpace
     /// <param name="message"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual Task<T> Send<T>(
+    public abstract Task<T> Send<T>(
       string source,
       string name,
       object message,
       IDictionary<object, object> inputs = null,
       IDictionary<object, object> options = null,
-      CancellationTokenSource cts = null)
-    {
-      return Task.FromResult<T>(default);
-    }
+      CancellationTokenSource cts = null);
 
     /// <summary>
     /// Create stream
@@ -140,14 +136,11 @@ namespace Distribution.CommunicatorSpace
     /// <param name="options"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual Task<Stream> Stream(
+    public abstract Task<Stream> Stream(
       string source,
       IDictionary<object, object> inputs = null,
       IDictionary<object, object> options = null,
-      CancellationTokenSource cts = null)
-    {
-      return Task.FromResult(new MemoryStream() as Stream);
-    }
+      CancellationTokenSource cts = null);
 
     /// <summary>
     /// Subscribe to messages
@@ -155,17 +148,6 @@ namespace Distribution.CommunicatorSpace
     /// <param name="app"></param>
     /// <param name="route"></param>
     /// <returns></returns>
-    public virtual Task Subscribe(IApplicationBuilder app, string route)
-    {
-      return Task.FromResult(0);
-    }
-
-    /// <summary>
-    /// Dispose
-    /// </summary>
-    public virtual void Dispose()
-    {
-      Disconnect();
-    }
+    public abstract Task Subscribe(IApplicationBuilder app, string route);
   }
 }

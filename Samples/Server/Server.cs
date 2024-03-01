@@ -1,5 +1,6 @@
 using Common;
-using Distribution.CommunicatorSpace;
+using Distribution.Cluster.CommunicatorSpace;
+using Distribution.Cluster.DomainSpace;
 using Distribution.DomainSpace;
 using Distribution.ServiceSpace;
 using System;
@@ -31,7 +32,7 @@ namespace ServerSpace
 
       // Create local server
 
-      var service = new Distribution.DomainSpace.Server
+      var service = new Distribution.Cluster.DomainSpace.Server
       {
         Port = port,
         Route = route,
@@ -50,7 +51,7 @@ namespace ServerSpace
       // beacon.Locate("Chain", port, TimeSpan.FromSeconds(1));
 
       var interval = new Timer(TimeSpan.FromSeconds(1));
-      var scheduler = new ScheduleService();
+      var scheduler = InstanceService<ScheduleService>.Instance;
 
       interval.Enabled = true;
       interval.Elapsed += (sender, e) => scheduler.Send(() => beacon.Send("Chain", port));

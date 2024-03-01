@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Libs\Distribution.csproj" />
+    <ProjectReference Include="..\..\Distribution.Cluster\Distribution.Cluster.csproj" />
   </ItemGroup>
 
 </Project>

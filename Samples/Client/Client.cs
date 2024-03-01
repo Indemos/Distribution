@@ -1,5 +1,6 @@
 using Common;
-using Distribution.CommunicatorSpace;
+using Distribution.Cluster.CommunicatorSpace;
+using Distribution.Cluster.DomainSpace;
 using Distribution.DomainSpace;
 using System;
 using System.Threading.Tasks;
@@ -93,7 +94,6 @@ namespace ClientSpace
       beacon.CreateStream += async o =>
       {
         var response = await cluster.Send<DemoResponse>("Virtual Cluster Actor", message);
-
         Console.WriteLine("Cluster message : " + response.Data);
       };
     }

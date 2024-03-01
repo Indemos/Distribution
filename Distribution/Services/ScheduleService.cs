@@ -1,48 +1,55 @@
 using System;
-using System.Collections.Concurrent;
+using System.IO;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Distribution.ServiceSpace
 {
   public class ScheduleService : IDisposable
   {
-    public virtual CancellationTokenSource Cancellation { get; set; }
-    protected virtual BlockingCollection<Action> Queue { get; set; }
+    protected virtual CancellationTokenSource _cancellation { get; set; }
+
+    protected virtual Channel<Action> _queue { get; set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="scheduler"></param>
-    public ScheduleService() : this(TaskScheduler.Default)
+    public ScheduleService() : this(1, TaskScheduler.Current, new CancellationTokenSource())
     {
     }
 
     /// <summary>
     /// Constructor
     /// </summary>
+    /// <param name="count"></param>
     /// <param name="scheduler"></param>
-    public ScheduleService(TaskScheduler scheduler)
+    /// <param name="cancellation"></param>
+    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
     {
-      Queue = new();
-      Cancellation = new CancellationTokenSource();
+      _cancellation = cancellation;
+      _queue = Channel.CreateBounded<Action>(count);
 
       Task.Factory.StartNew(() =>
       {
-        foreach (var action in Queue.GetConsumingEnumerable())
+        while (true)
         {
-          action();
+          if (_queue.Reader.TryRead(out var action))
+          {
+            action();
+          }
         }
       },
-      Cancellation.Token,
-      TaskCreationOptions.LongRunning,
-      scheduler ?? TaskScheduler.Current).ContinueWith(o => Queue.Dispose());
+      _cancellation.Token, TaskCreationOptions.LongRunning, scheduler).ContinueWith(o =>
+      {
+        _queue.Writer.TryComplete();
+      });
     }
 
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose() => Cancellation?.Cancel();
+    public virtual void Dispose() => _cancellation?.Cancel();
 
     /// <summary>
     /// Action processor
@@ -50,7 +57,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource Send(Action action)
     {
-      var completion = new TaskCompletionSource();
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -74,7 +81,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource<T> Send<T>(Func<T> action)
     {
-      var completion = new TaskCompletionSource<T>();
+      var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -97,7 +104,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource Send(Func<Task> action)
     {
-      var completion = new TaskCompletionSource();
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -121,7 +128,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action)
     {
-      var completion = new TaskCompletionSource<T>();
+      var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -144,7 +151,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource Send(Task action)
     {
-      var completion = new TaskCompletionSource();
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -168,7 +175,7 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     public virtual TaskCompletionSource<T> Send<T>(Task<T> action)
     {
-      var completion = new TaskCompletionSource<T>();
+      var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
@@ -189,13 +196,6 @@ namespace Distribution.ServiceSpace
     /// Enqueue
     /// </summary>
     /// <param name="action"></param>
-    protected virtual void Enqueue(Action action)
-    {
-      if (Queue.TryTake(out var o))
-      {
-      }
-
-      Queue.TryAdd(action);
-    }
+    protected virtual void Enqueue(Action action) => _queue.Writer.WriteAsync(action);
   }
 }

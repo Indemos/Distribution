@@ -1,11 +1,11 @@
-using Distribution.CommunicatorSpace;
+using Distribution.Cluster.CommunicatorSpace;
 using Distribution.ModelSpace;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Distribution.DomainSpace
+namespace Distribution.Cluster.DomainSpace
 {
   public interface ICluster : IDisposable
   {
@@ -42,7 +42,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task<T> Send<T>(string name, dynamic message);
+    Task<T> Send<T>(string name, object message);
   }
 
   public class Cluster : ICluster
@@ -116,7 +116,7 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual Task<T> Send<T>(string name, dynamic message)
+    public virtual Task<T> Send<T>(string name, object message)
     {
       var instance = GetInstance(name);
       var source = new UriBuilder(null, instance.Address, Beacon.Port, Route);

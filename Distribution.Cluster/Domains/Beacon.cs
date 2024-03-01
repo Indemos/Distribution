@@ -1,4 +1,3 @@
-using Distribution.ExtensionSpace;
 using Distribution.ModelSpace;
 using Distribution.ServiceSpace;
 using System;
@@ -9,7 +8,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Timers;
 
-namespace Distribution.DomainSpace
+namespace Distribution.Cluster.DomainSpace
 {
   public interface IBeacon : IDisposable
   {
@@ -119,7 +118,7 @@ namespace Distribution.DomainSpace
       return new InstanceModel
       {
         Time = DateTime.UtcNow,
-        Address = $"{ endpoint.Address }"
+        Address = $"{endpoint.Address}"
       };
     }
 
@@ -160,11 +159,11 @@ namespace Distribution.DomainSpace
 
       Communicator.Client.Bind(endpoint);
 
-      var interval = new Timer(createSpan);
-      var scheduler = new ScheduleService();
+      var interval = new Timer(TimeSpan.FromSeconds(1));
+      var scheduler = InstanceService<ScheduleService>.Instance;
 
       interval.Enabled = true;
-      interval.Elapsed += (sender, e) => scheduler.Send(() => 
+      interval.Elapsed += (sender, e) => scheduler.Send(() =>
       {
         Drop(dropSpan);
         Communicator.ReceiveAsync().ContinueWith(async o =>
@@ -175,9 +174,7 @@ namespace Distribution.DomainSpace
 
           if (Equals(name, message))
           {
-            var item = Instances.Get($"{endpoint.Address}");
-
-            if (item.Address is null)
+            if (Instances.TryGetValue($"{endpoint.Address}", out var item) is false)
             {
               CreateStream(item = Instances[$"{instance.Address}"] = CreateInstance(instance));
             }

@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Libs\Distribution.csproj" />
     <ProjectReference Include="..\Samples\Common\Common.csproj" />
   </ItemGroup>
 

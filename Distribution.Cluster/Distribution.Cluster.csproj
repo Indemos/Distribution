@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Description>General purpose virtual actor framework for peer-to-peer microservices or in-process communication within the same app with possible extension to blockchains.</Description>
     <Authors>artemiusgreat</Authors>
     <Copyright>indemos.com</Copyright>
@@ -24,6 +24,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="System.Interactive" Version="6.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Distribution\Distribution.csproj" />
   </ItemGroup>
   
 </Project>

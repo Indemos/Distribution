@@ -1,11 +1,13 @@
 using Distribution.AttributeSpace;
 using Distribution.ModelSpace;
 using Distribution.ServiceSpace;
+using Microsoft.AspNetCore.Hosting.Server;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -16,11 +18,6 @@ namespace Distribution.DomainSpace
   /// </summary>
   public interface IScene : IDisposable
   {
-    /// <summary>
-    /// Scheduler to execute tasks in a dedicated thread
-    /// </summary>
-    ScheduleService Scheduler { get; set; }
-
     /// <summary>
     /// Get message descriptor
     /// </summary>
@@ -39,7 +36,7 @@ namespace Distribution.DomainSpace
     /// Distribute message among all actors
     /// </summary>
     /// <param name="message"></param>
-    void Send(object message);
+    Task Send(object message);
 
     /// <summary>
     /// Send message
@@ -81,17 +78,10 @@ namespace Distribution.DomainSpace
     protected IDictionary<string, Action<object>> _subscribers;
 
     /// <summary>
-    /// Scheduler to execute tasks in a dedicated thread
-    /// </summary>
-    public virtual ScheduleService Scheduler { get; set; }
-
-    /// <summary>
     /// Constructor
     /// </summary>
     public Scene()
     {
-      Scheduler = new ScheduleService();
-
       _messages = new ConcurrentDictionary<string, Type>();
       _instances = new ConcurrentDictionary<string, object>();
       _observers = new ConcurrentDictionary<string, ActorModel>();
@@ -129,23 +119,27 @@ namespace Distribution.DomainSpace
     /// Distribute message among all actors
     /// </summary>
     /// <param name="message"></param>
-    public virtual void Send(object message)
+    public virtual Task Send(object message)
     {
       var inputs = new[] { message };
       var descriptor = message.GetType().Name;
+      var scheduler = InstanceService<ScheduleService>.Instance;
 
       if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
         subscriber(message);
       }
 
-      Parallel.ForEach(_observers, async observer =>
+      var observers = _observers.Select(observer => scheduler.Send(() => 
       {
         var actor = GetInstance(observer.Key, observer.Value.Descriptor);
         var processor = observer.Value.Descriptor.Invoke(actor, inputs) as Task;
 
-        await processor;
-      });
+        return processor;
+
+      }).Task);
+
+      return Task.WhenAll(observers);
     }
 
     /// <summary>
@@ -154,9 +148,9 @@ namespace Distribution.DomainSpace
     /// <param name="name"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    public virtual async Task<T> Send<T>(string name, object message)
+    public virtual Task<T> Send<T>(string name, object message)
     {
-      T response = default;
+      Task<T> response = Task.FromResult<T>(default);
 
       if (message is null)
       {
@@ -164,6 +158,7 @@ namespace Distribution.DomainSpace
       }
 
       var descriptor = message.GetType().Name;
+      var scheduler = InstanceService<ScheduleService>.Instance;
 
       if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
@@ -172,9 +167,15 @@ namespace Distribution.DomainSpace
 
       if (_processors.TryGetValue(descriptor, out var processor))
       {
-        dynamic actor = processor.Descriptor.Invoke(GetInstance(name, processor.Descriptor), new[] { message });
+        response = scheduler.Send(() =>
+        {
+          dynamic actor = processor
+            .Descriptor
+            .Invoke(GetInstance(name, processor.Descriptor), new[] { message });
 
-        response = await actor;
+          return (T)actor.GetAwaiter().GetResult();
+
+        }).Task;
 
         if (_subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
         {
@@ -195,8 +196,6 @@ namespace Distribution.DomainSpace
       _observers?.Clear();
       _processors?.Clear();
       _subscribers?.Clear();
-
-      Scheduler?.Dispose();
     }
 
     /// <summary>

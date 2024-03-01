@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Distribution.CommunicatorSpace
+namespace Distribution.Cluster.CommunicatorSpace
 {
   public class RouteCommunicator : Communicator, ICommunicator
   {
