@@ -1,8 +1,9 @@
 using Common;
 using Distribution.DomainSpace;
-using Distribution.ServiceSpace;
+using System;
+using System.Threading.Tasks;
 
-namespace UnitTests
+namespace Tests
 {
   public class Concurrency
   {
