@@ -1,7 +1,7 @@
 using System;
-using System.IO;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Distribution.ServiceSpace
@@ -10,7 +10,8 @@ namespace Distribution.ServiceSpace
   {
     protected virtual CancellationTokenSource _cancellation { get; set; }
 
-    protected virtual Channel<Action> _queue { get; set; }
+    protected virtual BlockingCollection<Action> _queue { get; set; }
+    protected virtual int _count { get; set; }
 
     /// <summary>
     /// Constructor
@@ -27,23 +28,17 @@ namespace Distribution.ServiceSpace
     /// <param name="cancellation"></param>
     public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
     {
+      _queue = new();
+      _count = count;
       _cancellation = cancellation;
-      _queue = Channel.CreateBounded<Action>(count);
 
-      Task.Factory.StartNew(() =>
-      {
-        while (true)
-        {
-          if (_queue.Reader.TryRead(out var action))
-          {
-            action();
-          }
-        }
-      },
-      _cancellation.Token, TaskCreationOptions.LongRunning, scheduler).ContinueWith(o =>
-      {
-        _queue.Writer.TryComplete();
-      });
+      Task
+        .Factory
+        .StartNew(() => _queue.GetConsumingEnumerable().ForEach(o => o()),
+          cancellation.Token,
+          TaskCreationOptions.LongRunning,
+          scheduler)
+        .ContinueWith(o => _queue.Dispose());
     }
 
     /// <summary>
@@ -196,6 +191,14 @@ namespace Distribution.ServiceSpace
     /// Enqueue
     /// </summary>
     /// <param name="action"></param>
-    protected virtual void Enqueue(Action action) => _queue.Writer.WriteAsync(action);
+    protected virtual void Enqueue(Action action)
+    {
+      if (_queue.Count > _count)
+      {
+        _queue.TryTake(out _);
+      }
+
+      _queue.TryAdd(action);
+    }
   }
 }
