@@ -1,13 +1,11 @@
 using Distribution.AttributeSpace;
 using Distribution.ModelSpace;
 using Distribution.ServiceSpace;
-using Microsoft.AspNetCore.Hosting.Server;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -18,6 +16,11 @@ namespace Distribution.DomainSpace
   /// </summary>
   public interface IScene : IDisposable
   {
+    /// <summary>
+    /// Scheduler
+    /// </summary>
+    ScheduleService Scheduler { get; set; }
+
     /// <summary>
     /// Get message descriptor
     /// </summary>
@@ -78,6 +81,11 @@ namespace Distribution.DomainSpace
     protected IDictionary<string, Action<object>> _subscribers;
 
     /// <summary>
+    /// Scheduler
+    /// </summary>
+    public virtual ScheduleService Scheduler { get; set; }
+
+    /// <summary>
     /// Constructor
     /// </summary>
     public Scene()
@@ -87,6 +95,8 @@ namespace Distribution.DomainSpace
       _observers = new ConcurrentDictionary<string, ActorModel>();
       _processors = new ConcurrentDictionary<string, ActorModel>();
       _subscribers = new ConcurrentDictionary<string, Action<object>>();
+
+      Scheduler = new ScheduleService();
 
       CreateProcessors();
       CreateObservers();
@@ -123,14 +133,13 @@ namespace Distribution.DomainSpace
     {
       var inputs = new[] { message };
       var descriptor = message.GetType().Name;
-      var scheduler = InstanceService<ScheduleService>.Instance;
 
       if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
         subscriber(message);
       }
 
-      var observers = _observers.Select(observer => scheduler.Send(() => 
+      var observers = _observers.Select(observer => Scheduler.Send(() => 
       {
         var actor = GetInstance(observer.Key, observer.Value.Descriptor);
         var processor = observer.Value.Descriptor.Invoke(actor, inputs) as Task;
@@ -158,7 +167,6 @@ namespace Distribution.DomainSpace
       }
 
       var descriptor = message.GetType().Name;
-      var scheduler = InstanceService<ScheduleService>.Instance;
 
       if (_subscribers.TryGetValue(descriptor, out var subscriber))
       {
@@ -167,7 +175,7 @@ namespace Distribution.DomainSpace
 
       if (_processors.TryGetValue(descriptor, out var processor))
       {
-        response = scheduler.Send(() =>
+        response = Scheduler.Send(() =>
         {
           dynamic actor = processor
             .Descriptor
@@ -196,6 +204,8 @@ namespace Distribution.DomainSpace
       _observers?.Clear();
       _processors?.Clear();
       _subscribers?.Clear();
+
+      Scheduler?.Dispose();
     }
 
     /// <summary>
