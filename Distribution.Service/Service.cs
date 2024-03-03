@@ -38,10 +38,8 @@ namespace Distribution.Service
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="client"></param>
-    public Service(HttpClient client = null)
+    public Service()
     {
-      Client = client ?? new HttpClient();
       Timeout = TimeSpan.FromSeconds(15);
       Scheduler = new ScheduleService();
       Options = new JsonSerializerOptions
