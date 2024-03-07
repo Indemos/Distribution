@@ -8,14 +8,14 @@ namespace Distribution.ServiceSpace
 {
   public class ScheduleService : IDisposable
   {
-    protected virtual CancellationTokenSource _cancellation { get; set; }
+    protected virtual Thread _process { get; set; }
     protected virtual BlockingCollection<Action> _queue { get; set; }
     protected virtual int _count { get; set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
+    public ScheduleService() : this(1, ThreadPriority.Normal)
     {
     }
 
@@ -23,27 +23,24 @@ namespace Distribution.ServiceSpace
     /// Constructor
     /// </summary>
     /// <param name="count"></param>
-    /// <param name="scheduler"></param>
-    /// <param name="cancellation"></param>
-    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
+    /// <param name="priority"></param>
+    public ScheduleService(int count, ThreadPriority priority)
     {
       _queue = new();
       _count = count;
-      _cancellation = cancellation;
+      _process = new Thread(() => _queue.GetConsumingEnumerable().ForEach(o => o()))
+      {
+        IsBackground = true,
+        Priority = priority
+      };
 
-      Task
-        .Factory
-        .StartNew(() => _queue.GetConsumingEnumerable().ForEach(o => o()),
-          cancellation.Token,
-          TaskCreationOptions.LongRunning,
-          scheduler)
-        .ContinueWith(o => _queue.Dispose());
+      _process.Start();
     }
 
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose() => _cancellation?.Cancel();
+    public virtual void Dispose() => _queue.CompleteAdding();
 
     /// <summary>
     /// Action processor
