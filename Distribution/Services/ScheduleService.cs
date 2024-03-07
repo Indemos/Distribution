@@ -9,14 +9,13 @@ namespace Distribution.ServiceSpace
   public class ScheduleService : IDisposable
   {
     protected virtual CancellationTokenSource _cancellation { get; set; }
-
     protected virtual BlockingCollection<Action> _queue { get; set; }
     protected virtual int _count { get; set; }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, TaskScheduler.Current, new CancellationTokenSource())
+    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
     {
     }
 
