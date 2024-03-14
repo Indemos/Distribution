@@ -16,9 +16,9 @@ namespace Tests
       var x3 = (await scene.Send<DemoResponse>("B", new ProcessMessage())).Id;
       var x4 = (await Task.Run(() => scene.Send<DemoResponse>("C", new ProcessMessage()))).Id;
 
-      //Assert.NotEqual(x1, x2);
-      //Assert.Equal(x2, x3);
-      //Assert.Equal(x3, x4);
+      Assert.NotEqual(x1, x2);
+      Assert.Equal(x2, x3);
+      Assert.Equal(x3, x4);
     }
 
     [Fact]

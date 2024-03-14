@@ -12,6 +12,7 @@ namespace Distribution.ServiceSpace
     protected int _count;
     protected Thread _process;
     protected Channel<Action> _queue;
+    protected SemaphoreSlim _sem = new(1, 1);
 
     /// <summary>
     /// Constructor
@@ -33,8 +34,9 @@ namespace Distribution.ServiceSpace
       _process = new Thread(() =>
       {
         while (true)
-        //while (await _queue.Reader.WaitToReadAsync())
         {
+          _sem.Wait();
+
           while (_queue.Reader.TryRead(out var action))
           {
             action();
@@ -207,6 +209,7 @@ namespace Distribution.ServiceSpace
       }
 
       _queue.Writer.WriteAsync(action);
+      _sem.Release();
     }
   }
 }
