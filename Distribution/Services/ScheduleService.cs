@@ -1,6 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -12,7 +10,7 @@ namespace Distribution.ServiceSpace
     protected int _count;
     protected Thread _process;
     protected Channel<Action> _queue;
-    protected SemaphoreSlim _sem = new(1, 1);
+    protected ManualResetEvent _semaphore = new(true);
 
     /// <summary>
     /// Constructor
@@ -35,12 +33,14 @@ namespace Distribution.ServiceSpace
       {
         while (true)
         {
-          _sem.Wait();
+          _semaphore.WaitOne();
 
           while (_queue.Reader.TryRead(out var action))
           {
             action();
           }
+
+          _semaphore.Reset();
         }
       })
       {
@@ -209,7 +209,7 @@ namespace Distribution.ServiceSpace
       }
 
       _queue.Writer.WriteAsync(action);
-      _sem.Release();
+      _semaphore.Set();
     }
   }
 }
