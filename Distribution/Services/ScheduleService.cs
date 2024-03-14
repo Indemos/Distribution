@@ -30,9 +30,10 @@ namespace Distribution.ServiceSpace
     {
       _count = count;
       _queue = Channel.CreateBounded<Action>(count);
-      _process = new Thread(async () =>
+      _process = new Thread(() =>
       {
-        while (await _queue.Reader.WaitToReadAsync())
+        while (true)
+        //while (await _queue.Reader.WaitToReadAsync())
         {
           while (_queue.Reader.TryRead(out var action))
           {
