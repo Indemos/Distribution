@@ -1,21 +1,22 @@
 using System;
-using System.Collections.Concurrent;
-using System.Linq;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Distribution.ServiceSpace
 {
   public class ScheduleService : IDisposable
   {
-    protected virtual Thread _process { get; set; }
-    protected virtual BlockingCollection<Action> _queue { get; set; }
-    protected virtual int _count { get; set; }
+    protected int _count;
+    protected Thread _process;
+    protected Channel<Action> _queue;
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, ThreadPriority.Normal)
+    public ScheduleService() : this(1, ThreadPriority.Lowest)
     {
     }
 
@@ -23,12 +24,22 @@ namespace Distribution.ServiceSpace
     /// Constructor
     /// </summary>
     /// <param name="count"></param>
-    /// <param name="priority"></param>
+    /// <param name="scheduler"></param>
+    /// <param name="cancellation"></param>
     public ScheduleService(int count, ThreadPriority priority)
     {
-      _queue = new();
       _count = count;
-      _process = new Thread(() => _queue.GetConsumingEnumerable().ForEach(o => o()))
+      _queue = Channel.CreateBounded<Action>(count);
+      _process = new Thread(async () =>
+      {
+        while (await _queue.Reader.WaitToReadAsync())
+        {
+          while (_queue.Reader.TryRead(out var action))
+          {
+            action();
+          }
+        }
+      })
       {
         IsBackground = true,
         Priority = priority
@@ -40,7 +51,7 @@ namespace Distribution.ServiceSpace
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose() => _queue.CompleteAdding();
+    public virtual void Dispose() => _queue.Writer.TryComplete();
 
     /// <summary>
     /// Action processor
@@ -189,12 +200,12 @@ namespace Distribution.ServiceSpace
     /// <param name="action"></param>
     protected virtual void Enqueue(Action action)
     {
-      if (_queue.Count > _count)
+      if (_queue.Reader.Count >= _count)
       {
-        _queue.TryTake(out _);
+        _queue.Reader.TryRead(out _);
       }
 
-      _queue.TryAdd(action);
+      _queue.Writer.WriteAsync(action);
     }
   }
 }
