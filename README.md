@@ -8,8 +8,16 @@ Each of them can be considered as an advantage or a disadvantage depending on sp
 
 # Status
 
+For virtual actors and reactive store
+
 ```
 Install-Package Distribution
+```
+
+For clusters and interserver communication
+
+```
+Install-Package Distribution.Cluster
 ```
 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/Indemos/Distribution/dotnet.yml?event=push)
@@ -18,21 +26,19 @@ Install-Package Distribution
 
 # Features
 
-- Single thread 
+- Safe single-threaded execution in a background worker without locks
 - Zero configuration
-- Cross platform .NET 7
+- Local actors and store are cross-platform .NET Standard 2.0
 - UDP broadcasting for automatic service discovery without a single point of failure 
 - Peer-To-Peer network of independent nodes without consensus leaders
 - Random placement of virtual actors within a cluster 
 - Ability to create multiple instances of the same type of actor using unique ID 
 - Ability to override any layer, including protocol, actor placement strategy, service discovery, etc
-- No dangerous binary serialization or 3rd party serializtion libraries 
-- Simple C# POCO classes for messages, no attributes or other decorators 
-- Process messages using the same or multiple actor classes with `[Subscription]` attribute 
+- No dangerous binary serialization or 3rd party serialization libraries 
+- Simple C# POCO structs for messages, no attributes or other decorators 
+- Process messages using single or multiple actors with `[Subscription]` attribute 
 - Kestrel server middleware to process message queries 
-- Usage of `Task` methods instead of FIFO loops for asynchronous communication 
-- Automatic loading and mapping for actors and messages using reflection, borrowed from `Mediatr` framework 
-- No use of locks
+- Automatic loading and mapping for actors and messages at startup 
 
 # Sample 
 
