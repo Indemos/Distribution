@@ -85,7 +85,7 @@ namespace Distribution.Cluster.CommunicatorSpace
         {
           foreach (var item in headers)
           {
-            client.DefaultRequestHeaders.Add($"{ item.Key }", $"{ item.Value }");
+            client.DefaultRequestHeaders.Add($"{item.Key}", $"{item.Value}");
           }
         }
 
@@ -119,8 +119,8 @@ namespace Distribution.Cluster.CommunicatorSpace
           if (envelope.Descriptor is not null)
           {
             var descriptor = Scene.GetMessage(envelope.Descriptor);
-            var message = Decode($"{ envelope.Message }", descriptor);
-            var response = await Scene.Send<object>($"{ session }:{ envelope.Name }", message);
+            var message = Decode($"{envelope.Message}", descriptor);
+            var response = await Scene.Send<object>($"{session}:{envelope.Name}", message);
 
             await context.Response.WriteAsync(Encode(response));
           }
@@ -216,7 +216,7 @@ namespace Distribution.Cluster.CommunicatorSpace
       {
         foreach (var item in headers)
         {
-          message.Headers.Add($"{ item.Key }", $"{ item.Value }");
+          message.Headers.Add($"{item.Key}", $"{item.Value}");
         }
       }
 
@@ -225,23 +225,21 @@ namespace Distribution.Cluster.CommunicatorSpace
         cts = new CancellationTokenSource(Timeout);
       }
 
-      HttpResponseMessage response = null;
-
       try
       {
-        response = await _client
+        var response = await _client
           .SendAsync(message, cts.Token)
+          .ConfigureAwait(false);
+
+        return await response
+          .Content
+          .ReadAsStreamAsync(cts.Token)
           .ConfigureAwait(false);
       }
       catch (Exception)
       {
         return null;
       }
-
-      return await response
-        .Content
-        .ReadAsStreamAsync(cts.Token)
-        .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -257,11 +255,11 @@ namespace Distribution.Cluster.CommunicatorSpace
       {
         foreach (var item in query)
         {
-          inputs.Add($"{ item.Key }", $"{ item.Value }");
+          inputs.Add($"{item.Key}", $"{item.Value}");
         }
       }
 
-      return $"{ inputs }";
+      return $"{inputs}";
     }
   }
 }

@@ -15,7 +15,6 @@ namespace Distribution.ServiceSpace
     public LogService() => Serilog.Log.Logger = new LoggerConfiguration()
       .MinimumLevel.Debug()
       .Enrich.FromLogContext()
-      .WriteTo.Debug()
       .CreateLogger();
   }
 }

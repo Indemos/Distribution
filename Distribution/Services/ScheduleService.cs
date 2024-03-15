@@ -10,7 +10,7 @@ namespace Distribution.ServiceSpace
     protected int _count;
     protected Thread _process;
     protected Channel<Action> _queue;
-    protected ManualResetEvent _semaphore = new(true);
+    protected ManualResetEvent _semaphore = new ManualResetEvent(true);
 
     /// <summary>
     /// Constructor
@@ -60,16 +60,16 @@ namespace Distribution.ServiceSpace
     /// Action processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource Send(Action action)
+    public virtual TaskCompletionSource<bool> Send(Action action)
     {
-      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
         try
         {
           action();
-          completion.TrySetResult();
+          completion.TrySetResult(true);
         }
         catch (Exception e)
         {
@@ -107,16 +107,16 @@ namespace Distribution.ServiceSpace
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource Send(Func<Task> action)
+    public virtual TaskCompletionSource<bool> Send(Func<Task> action)
     {
-      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
         try
         {
           action().GetAwaiter().GetResult();
-          completion.TrySetResult();
+          completion.TrySetResult(true);
         }
         catch (Exception e)
         {
@@ -154,16 +154,16 @@ namespace Distribution.ServiceSpace
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource Send(Task action)
+    public virtual TaskCompletionSource<bool> Send(Task action)
     {
-      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       Enqueue(() =>
       {
         try
         {
           action.GetAwaiter().GetResult();
-          completion.TrySetResult();
+          completion.TrySetResult(true);
         }
         catch (Exception e)
         {

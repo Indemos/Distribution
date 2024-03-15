@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Distribution.DomainSpace
@@ -252,8 +254,8 @@ namespace Distribution.DomainSpace
         {
           descriptor.IsPublic,
           descriptor.GetCustomAttributes(typeof(Processor), true).Any(),
-          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
-          message is not null
+          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null,
+          message != null
         };
 
         if (conditions.All(o => o))
@@ -287,8 +289,8 @@ namespace Distribution.DomainSpace
         {
           descriptor.IsPublic,
           descriptor.GetCustomAttributes(typeof(Observer), true).Any(),
-          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null,
-          message is not null
+          descriptor.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null,
+          message != null
         };
 
         if (conditions.All(o => o))

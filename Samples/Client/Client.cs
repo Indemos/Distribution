@@ -79,7 +79,7 @@ namespace ClientSpace
         Port = port
       };
 
-      beacon.Locate("Chain", port, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10));
+      beacon.Locate("Chain", port, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
 
       // Make the current app a part of a cluster and provide preferred communicator
 

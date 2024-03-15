@@ -5,7 +5,7 @@ namespace Distribution.ServiceSpace
   /// </summary>
   public class InstanceService<T> where T: new()
   {
-    private static readonly T _instance = new();
+    private static readonly T _instance = new T();
 
     /// <summary>
     /// Single instance
