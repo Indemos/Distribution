@@ -21,7 +21,7 @@ namespace ServerSpace
 
       // Create actor system
 
-      var scene = new Scene();
+      var scene = new ClusterScene();
 
       // Create basic HTTP JSON transport for peer-to-peer communication 
 

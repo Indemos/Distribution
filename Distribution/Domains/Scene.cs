@@ -179,11 +179,11 @@ namespace Distribution.DomainSpace
       {
         response = Scheduler.Send(() =>
         {
-          dynamic actor = processor
+          var actor = processor
             .Descriptor
-            .Invoke(GetInstance(name, processor.Descriptor), new[] { message });
+            .Invoke(GetInstance(name, processor.Descriptor), new[] { message }) as Task<T>;
 
-          return (T)actor.GetAwaiter().GetResult();
+          return actor.GetAwaiter().GetResult();
 
         }).Task;
 
