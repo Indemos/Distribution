@@ -29,9 +29,9 @@ namespace Distribution.ServiceSpace
     {
       _count = count;
       _queue = Channel.CreateBounded<Action>(count);
-      _process = new Thread(() =>
+      _process = new Thread(async () =>
       {
-        while (true)
+        while (await _queue.Reader.WaitToReadAsync())
         {
           _semaphore.WaitOne();
 
@@ -54,7 +54,7 @@ namespace Distribution.ServiceSpace
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose() => _queue.Writer.TryComplete();
+    public virtual void Dispose() => _queue?.Writer?.TryComplete();
 
     /// <summary>
     /// Action processor
