@@ -8,14 +8,14 @@ namespace Distribution.ServiceSpace
   public class ScheduleService : IDisposable
   {
     protected int _count;
-    protected Thread _process;
     protected Channel<Action> _queue;
+    protected CancellationTokenSource _cancellation;
     protected ManualResetEvent _semaphore = new ManualResetEvent(true);
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, ThreadPriority.Lowest)
+    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
     {
     }
 
@@ -25,36 +25,41 @@ namespace Distribution.ServiceSpace
     /// <param name="count"></param>
     /// <param name="scheduler"></param>
     /// <param name="cancellation"></param>
-    public ScheduleService(int count, ThreadPriority priority)
+    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
     {
       _count = count;
+      _cancellation = cancellation;
       _queue = Channel.CreateBounded<Action>(count);
-      _process = new Thread(async () =>
-      {
-        while (await _queue.Reader.WaitToReadAsync())
+
+      Task
+        .Factory
+        .StartNew(() =>
         {
-          _semaphore.WaitOne();
-
-          while (_queue.Reader.TryRead(out var action))
+          while (cancellation.IsCancellationRequested is false)
           {
-            action();
+            _semaphore.WaitOne();
+
+            while (_queue.Reader.TryRead(out var action))
+            {
+              action();
+            }
+
+            _semaphore.Reset();
           }
-
-          _semaphore.Reset();
-        }
-      })
-      {
-        IsBackground = true,
-        Priority = priority
-      };
-
-      _process.Start();
+        },
+        cancellation.Token,
+        TaskCreationOptions.LongRunning,
+        scheduler);
     }
 
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose() => _queue?.Writer?.TryComplete();
+    public virtual void Dispose()
+    {
+      _cancellation?.Cancel();
+      _queue?.Writer?.TryComplete();
+    }
 
     /// <summary>
     /// Action processor
