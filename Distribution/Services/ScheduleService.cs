@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace Distribution.ServiceSpace
+namespace Distribution.Services
 {
   public class ScheduleService : IDisposable
   {

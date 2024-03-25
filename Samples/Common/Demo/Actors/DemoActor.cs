@@ -1,4 +1,4 @@
-using Distribution.AttributeSpace;
+using Distribution.Attributes;
 using System.Threading;
 using System.Threading.Tasks;
 

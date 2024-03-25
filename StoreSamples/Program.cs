@@ -1,4 +1,4 @@
-using Distribution.DomainSpace;
+using Distribution.Domains;
 using ReactiveStore.ActionSpace;
 using ReactiveStore.SelectorSpace;
 using System;

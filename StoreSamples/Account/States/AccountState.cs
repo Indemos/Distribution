@@ -1,4 +1,4 @@
-using Distribution.AttributeSpace;
+using Distribution.Attributes;
 using ReactiveStore.ActionSpace;
 using ReactiveStore.SelectorSpace;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-using Distribution.DomainSpace;
+using Distribution.Domains;
 using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Distribution.Cluster.CommunicatorSpace
+namespace Distribution.Cluster.Communicators
 {
   public interface ICommunicator : IDisposable
   {

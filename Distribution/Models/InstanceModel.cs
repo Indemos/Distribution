@@ -1,6 +1,6 @@
 using System;
 
-namespace Distribution.ModelSpace
+namespace Distribution.Models
 {
   public struct InstanceModel 
   {

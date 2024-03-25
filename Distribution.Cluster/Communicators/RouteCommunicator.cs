@@ -1,4 +1,4 @@
-using Distribution.ModelSpace;
+using Distribution.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Distribution.Cluster.CommunicatorSpace
+namespace Distribution.Cluster.Communicators
 {
   public class RouteCommunicator : Communicator, ICommunicator
   {

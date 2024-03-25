@@ -1,6 +1,6 @@
 using System;
 
-namespace Distribution.AttributeSpace
+namespace Distribution.Attributes
 {
   public class Processor : Attribute
   {

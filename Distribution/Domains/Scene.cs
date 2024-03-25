@@ -1,17 +1,15 @@
-using Distribution.AttributeSpace;
-using Distribution.ModelSpace;
-using Distribution.ServiceSpace;
+using Distribution.Attributes;
+using Distribution.Models;
+using Distribution.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace Distribution.DomainSpace
+namespace Distribution.Domains
 {
   /// <summary>
   /// Definition

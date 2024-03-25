@@ -1,8 +1,8 @@
 using Common;
-using Distribution.Cluster.CommunicatorSpace;
-using Distribution.Cluster.DomainSpace;
-using Distribution.DomainSpace;
-using Distribution.ServiceSpace;
+using Distribution.Cluster.Communicators;
+using Distribution.Cluster.Domains;
+using Distribution.Domains;
+using Distribution.Services;
 using System;
 using System.Timers;
 
@@ -32,7 +32,7 @@ namespace ServerSpace
 
       // Create local server
 
-      var service = new Distribution.Cluster.DomainSpace.Server
+      var service = new Distribution.Cluster.Domains.Server
       {
         Port = port,
         Route = route,

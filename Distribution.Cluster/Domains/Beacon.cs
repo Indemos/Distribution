@@ -1,5 +1,5 @@
-using Distribution.ModelSpace;
-using Distribution.ServiceSpace;
+using Distribution.Models;
+using Distribution.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Timers;
 
-namespace Distribution.Cluster.DomainSpace
+namespace Distribution.Cluster.Domains
 {
   public interface IBeacon : IDisposable
   {

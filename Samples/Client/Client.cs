@@ -1,7 +1,7 @@
 using Common;
-using Distribution.Cluster.CommunicatorSpace;
-using Distribution.Cluster.DomainSpace;
-using Distribution.DomainSpace;
+using Distribution.Cluster.Communicators;
+using Distribution.Cluster.Domains;
+using Distribution.Domains;
 using System;
 using System.Threading.Tasks;
 

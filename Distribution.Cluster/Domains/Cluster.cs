@@ -1,11 +1,11 @@
-using Distribution.Cluster.CommunicatorSpace;
-using Distribution.ModelSpace;
+using Distribution.Cluster.Communicators;
+using Distribution.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Distribution.Cluster.DomainSpace
+namespace Distribution.Cluster.Domains
 {
   public interface ICluster : IDisposable
   {

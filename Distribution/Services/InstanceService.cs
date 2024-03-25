@@ -1,4 +1,4 @@
-namespace Distribution.ServiceSpace
+namespace Distribution.Services
 {
   /// <summary>
   /// Service to track account changes, including equity and quotes

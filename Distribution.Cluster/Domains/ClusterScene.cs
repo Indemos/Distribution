@@ -1,7 +1,7 @@
-using Distribution.DomainSpace;
+using Distribution.Domains;
 using System.Threading.Tasks;
 
-namespace Distribution.Cluster.DomainSpace
+namespace Distribution.Cluster.Domains
 {
   public class ClusterScene : Scene, IScene
   {
