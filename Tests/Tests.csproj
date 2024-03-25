@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Distribution.Service\Distribution.Stream.csproj" />
+    <ProjectReference Include="..\Distribution.Stream\Distribution.Stream.csproj" />
     <ProjectReference Include="..\Samples\Common\Common.csproj" />
   </ItemGroup>
 
