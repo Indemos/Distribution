@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Distribution.Service.Converters
+namespace Distribution.Stream.Converters
 {
   public class LongConverter : JsonConverter<long>
   {

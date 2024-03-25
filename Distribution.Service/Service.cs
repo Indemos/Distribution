@@ -1,4 +1,4 @@
-using Distribution.Service.Models;
+using Distribution.Stream.Models;
 using Distribution.Services;
 using System;
 using System.IO;
@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Distribution.Service
+namespace Distribution.Stream
 {
   public class Service
   {
@@ -99,7 +99,7 @@ namespace Distribution.Service
     /// <param name="options"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual async Task<Stream> Stream(
+    public virtual async Task<System.IO.Stream> Stream(
       HttpRequestMessage message,
       JsonSerializerOptions options = null,
       CancellationTokenSource cts = null)

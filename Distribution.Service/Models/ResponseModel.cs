@@ -1,4 +1,4 @@
-namespace Distribution.Service.Models
+namespace Distribution.Stream.Models
 {
   public struct ResponseModel<T>
   {
