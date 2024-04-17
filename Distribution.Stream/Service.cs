@@ -127,6 +127,12 @@ namespace Distribution.Stream
         var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false);
         var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
 
+        if ((int)res.StatusCode >= 400)
+        {
+          response.Error = await res.Content.ReadAsStringAsync();
+          return response;
+        }
+
         response.Data = await JsonSerializer.DeserializeAsync<T>(content, Options).ConfigureAwait(false);
       }
       catch (Exception e)
