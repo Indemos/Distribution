@@ -1,17 +1,17 @@
-using System.Collections.Generic;
+using System.Collections;
 using System.Web;
 
 namespace Distribution.Stream.Extensions
 {
   public static class DictionaryExtensions
   {
-    public static string ToQuery<K, V>(this IDictionary<K, V> input)
+    public static string ToQuery(this IDictionary input)
     {
       var inputs = HttpUtility.ParseQueryString(string.Empty);
 
       if (input is not null)
       {
-        foreach (var item in input)
+        foreach (DictionaryEntry item in input)
         {
           inputs[$"{item.Key}"] = $"{item.Value}";
         }
