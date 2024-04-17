@@ -76,7 +76,10 @@ namespace Tests
         Client = clientStub.Object
       };
 
-      await Assert.ThrowsAsync<Exception>(async () => await service.Send<Demo>(messageStub.Object));
+      var res = await service.Send<Demo>(messageStub.Object);
+
+      Assert.Null(res.Data);
+      Assert.Equal(e.Message, res.Error);
     }
   }
 }
