@@ -1,7 +1,5 @@
 using Distribution.Stream.Models;
-using Distribution.Services;
 using System;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -26,11 +24,6 @@ namespace Distribution.Stream
     public virtual HttpClient Client { get; set; }
 
     /// <summary>
-    /// Scheduler
-    /// </summary>
-    public virtual ScheduleService Scheduler { get; set; }
-
-    /// <summary>
     /// Serialization options
     /// </summary>
     public virtual JsonSerializerOptions Options { get; set; }
@@ -47,9 +40,8 @@ namespace Distribution.Stream
     /// </summary>
     public Service(HttpClient client)
     {
-      Client = client ?? new HttpClient();
+      Client = client;
       Timeout = TimeSpan.FromSeconds(15);
-      Scheduler = new ScheduleService();
       Options = new JsonSerializerOptions
       {
         PropertyNameCaseInsensitive = true,
@@ -104,9 +96,13 @@ namespace Distribution.Stream
       JsonSerializerOptions options = null,
       CancellationTokenSource cts = null)
     {
+      cts ??= new CancellationTokenSource(Timeout);
+
       using (var client = new HttpClient())
       {
-        return await client.GetStreamAsync(message.RequestUri, (cts ?? new CancellationTokenSource(Timeout)).Token);
+        return await client
+          .GetStreamAsync(message.RequestUri, cts.Token)
+          .ConfigureAwait(false);
       }
     }
 
@@ -117,52 +113,33 @@ namespace Distribution.Stream
     /// <param name="options"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual Task<ResponseModel<T>> Send<T>(
+    public virtual async Task<ResponseModel<T>> Send<T>(
       HttpRequestMessage message,
       JsonSerializerOptions options = null,
       CancellationTokenSource cts = null)
     {
       var response = new ResponseModel<T>();
-      var completion = new TaskCompletionSource<ResponseModel<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
 
       try
       {
         cts ??= new CancellationTokenSource(Timeout);
 
-        Scheduler.Send(async () =>
-        {
-          try
-          {
-            var res = await Client.SendAsync(message, cts.Token);
-            var content = await res.Content.ReadAsStreamAsync(cts.Token);
-            var entity = await JsonSerializer.DeserializeAsync<T>(content, Options);
+        var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false);
+        var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
 
-            completion.TrySetResult(new ResponseModel<T>
-            {
-              Data = entity
-            });
-          }
-          catch (Exception e)
-          {
-            completion.TrySetException(e);
-          }
-        });
+        response.Data = await JsonSerializer.DeserializeAsync<T>(content, Options).ConfigureAwait(false);
       }
       catch (Exception e)
       {
         response.Error = e.Message;
       }
 
-      return completion.Task;
+      return response;
     }
 
     /// <summary>
     /// Dispose
     /// </summary>
-    public virtual void Dispose()
-    {
-      Client?.Dispose();
-      Scheduler?.Dispose();
-    }
+    public virtual void Dispose() => Client?.Dispose();
   }
 }
