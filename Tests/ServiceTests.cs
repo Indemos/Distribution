@@ -162,7 +162,7 @@ namespace Tests
       Assert.True(res.Data.UserConfigurations.FractionalTrading);
       Assert.Equal(15.77, res.Data.Cash);
       Assert.Equal(0, res.Data.Balance);
-      Assert.Equal(new DateTime(2020, 4, 15, 4, 26, 42) + "", res.Data.CreatedAt + "");
+      Assert.Equal(DateTime.Parse("2020-04-15T08:26:42.566072Z") + "", res.Data.CreatedAt.Value + "");
     }
   }
 }
