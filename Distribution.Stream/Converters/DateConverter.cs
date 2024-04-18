@@ -8,15 +8,11 @@ namespace Distribution.Stream.Converters
   {
     public override bool HandleNull => true;
 
-    public override DateTime Read(ref Utf8JsonReader reader, Type dataType, JsonSerializerOptions options)
-    {
-      if (reader.TokenType is JsonTokenType.String && reader.TryGetDateTime(out var response))
-      {
-        return response;
-      }
-
-      return default;
-    }
+    public override DateTime Read(
+      ref Utf8JsonReader reader,
+      Type dataType,
+      JsonSerializerOptions options) =>
+      DateTime.TryParse(reader.GetString(), out var o) ? o : default;
 
     public override void Write(
       Utf8JsonWriter writer,

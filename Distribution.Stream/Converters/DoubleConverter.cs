@@ -8,15 +8,11 @@ namespace Distribution.Stream.Converters
   {
     public override bool HandleNull => true;
 
-    public override double Read(ref Utf8JsonReader reader, Type dataType, JsonSerializerOptions options)
-    {
-      if (reader.TokenType is JsonTokenType.Number && reader.TryGetDouble(out var response))
-      {
-        return response;
-      }
-
-      return default;
-    }
+    public override double Read(
+      ref Utf8JsonReader reader,
+      Type dataType,
+      JsonSerializerOptions options) =>
+      double.TryParse(reader.GetString(), out var o) ? o : default;
 
     public override void Write(
       Utf8JsonWriter writer,
