@@ -4,19 +4,28 @@ using System.Text.Json.Serialization;
 
 namespace Distribution.Stream.Converters
 {
-  public class IntegerConverter : JsonConverter<int>
+  public class BoolConverter : JsonConverter<bool>
   {
     public override bool HandleNull => true;
 
-    public override int Read(
+    public override bool Read(
       ref Utf8JsonReader reader,
       Type dataType,
-      JsonSerializerOptions options) =>
-      int.TryParse(reader.GetString(), out var o) ? o : default;
+      JsonSerializerOptions options)
+    {
+      switch (reader.TokenType)
+      {
+        case JsonTokenType.True: return true;
+        case JsonTokenType.Null: 
+        case JsonTokenType.False: return false;
+      }
+
+      return bool.TryParse(reader.GetString(), out var o) && o;
+    }
 
     public override void Write(
       Utf8JsonWriter writer,
-      int modelToWrite,
+      bool modelToWrite,
       JsonSerializerOptions options) =>
       JsonSerializer.Serialize(writer, modelToWrite, modelToWrite.GetType(), options);
   }

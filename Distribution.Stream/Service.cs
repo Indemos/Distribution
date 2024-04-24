@@ -1,3 +1,4 @@
+using Distribution.Stream.Converters;
 using Distribution.Stream.Models;
 using System;
 using System.Linq;
@@ -44,11 +45,18 @@ namespace Distribution.Stream
       Timeout = TimeSpan.FromSeconds(15);
       Options = new JsonSerializerOptions
       {
+        WriteIndented = true,
         PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+        NumberHandling =
+          JsonNumberHandling.AllowReadingFromString |
+          JsonNumberHandling.AllowNamedFloatingPointLiterals |
+          JsonNumberHandling.WriteAsString,
         Converters =
         {
+          new Converters.IntConverter(),
+          new Converters.BoolConverter(),
           new Converters.DateConverter(),
           new Converters.DoubleConverter()
         },

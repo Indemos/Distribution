@@ -1,6 +1,7 @@
 using Distribution.Stream;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -9,34 +10,130 @@ using System.Threading.Tasks;
 
 namespace Tests
 {
-  public class Sample
+  public class Sample1
   {
-    public string Id { get; set; }
+    public bool Bool1 { get; set; }
+    public bool Bool2 { get; set; }
+    public bool Bool3 { get; set; }
+    public bool Bool4 { get; set; }
+    public bool Bool5 { get; set; }
+    public bool Bool6 { get; set; }
+    public int Int1 { get; set; }
+    public int Int2 { get; set; }
+    public int Int3 { get; set; }
+    public int Int4 { get; set; }
+    public int Int5 { get; set; }
+    public int Int6 { get; set; }
+    public int Int7 { get; set; }
+    public double Double1 { get; set; }
+    public double Double2 { get; set; }
+    public double Double3 { get; set; }
+    public double Double4 { get; set; }
+    public double Double5 { get; set; }
+    public double Double6 { get; set; }
+    public double Double7 { get; set; }
+    public string String1 { get; set; }
+    public string String2 { get; set; }
+    public string String3 { get; set; }
+    public List<int> List1 { get; set; }
+    public List<double> List2 { get; set; }
+    public int[] Array1 { get; set; }
+    public double[] Array2 { get; set; }
+    public DateTime Date1 { get; set; }
+    public DateTime Date2 { get; set; }
+    public DateTime Date3 { get; set; }
+    public DateTime Date4 { get; set; }
+    public DateTime Date5 { get; set; }
     public UserDataSample UserConfigurations { get; set; }
-    public string AccountNumber { get; set; }
-    public string Status { get; set; }
-    public string Currency { get; set; }
-    public double Cash { get; set; }
-    public double? AccruedFees { get; set; }
-    public bool AccountBlocked { get; set; }
-    public DateTime? CreatedAt { get; set; }
-    public int Multiplier { get; set; }
-    public bool ShortingEnabled { get; set; }
-    public double Equity { get; set; }
-    public double Balance { get; set; }
-    public DateTime? BalanceAsof { get; set; }
+  }
+
+  public class Sample2
+  {
+    public bool? Bool1 { get; set; }
+    public bool? Bool2 { get; set; }
+    public bool? Bool3 { get; set; }
+    public bool? Bool4 { get; set; }
+    public bool? Bool5 { get; set; }
+    public bool? Bool6 { get; set; }
+    public int? Int1 { get; set; }
+    public int? Int2 { get; set; }
+    public int? Int3 { get; set; }
+    public int? Int4 { get; set; }
+    public int? Int5 { get; set; }
+    public int? Int6 { get; set; }
+    public int? Int7 { get; set; }
+    public double? Double1 { get; set; }
+    public double? Double2 { get; set; }
+    public double? Double3 { get; set; }
+    public double? Double4 { get; set; }
+    public double? Double5 { get; set; }
+    public double? Double6 { get; set; }
+    public double? Double7 { get; set; }
+    public string String1 { get; set; }
+    public string String2 { get; set; }
+    public string String3 { get; set; }
+    public List<int?> List1 { get; set; }
+    public List<double?> List2 { get; set; }
+    public int?[] Array1 { get; set; }
+    public double?[] Array2 { get; set; }
+    public DateTime? Date1 { get; set; }
+    public DateTime? Date2 { get; set; }
+    public DateTime? Date3 { get; set; }
+    public DateTime? Date4 { get; set; }
+    public DateTime? Date5 { get; set; }
+    public UserDataSample UserConfigurations { get; set; }
   }
 
   public class UserDataSample
   {
-    public string DtbpCheck { get; set; }
-    public bool FractionalTrading { get; set; }
-    public double MaxMarginMultiplier { get; set; }
-    public string TradeConfirmEmail { get; set; }
+    public bool Bool1 { get; set; }
+    public int Int1 { get; set; }
+    public string String1 { get; set; }
+    public double Double1 { get; set; }
   }
 
   public class ServiceSchedulerTests
   {
+    const string responseSample = """
+    {
+      "user_configurations": {
+        "int1": "1",
+        "bool1": true,
+        "double1": "4.5",
+        "string1": "none"
+      },
+      "bool1": true,
+      "bool2": false, 
+      "bool3": "true",
+      "bool4": "false", 
+      "bool5": null, 
+      "bool6": "none", 
+      "int1": "5",
+      "int2": 5,
+      "int3": "-5",
+      "int4": -5,
+      "int5": "",
+      "int6": "none",
+      "int7": null,
+      "double1": "5.555",
+      "double2": 5.555,
+      "double3": "-5.555",
+      "double4": -5.555,
+      "double5": "",
+      "double6": "none",
+      "double7": null,
+      "date1": "2020-04-15T08:26:42.566072Z",
+      "date2": "2020-04-15",
+      "date3": "",
+      "date4": "none",
+      "date5": null,
+      "list1": [5, "5", -5, "-5", "none", null],
+      "list2": [5.555, "5.555", -5.555, "-5.555", "none", null],
+      "array1": [5, "5", -5, "-5", "none", null],
+      "array2": [5.555, "5.555", -5.555, "-5.555", "none", null]
+    }
+    """;
+
     private class Demo
     {
       public int Id { get; set; }
@@ -111,31 +208,6 @@ namespace Tests
     [Fact]
     public async Task Deserialize()
     {
-      var responseSample = """
-      {
-        "id": "f703b2e9",
-        "demo": 5, 
-        "user_configurations": {
-          "dtbp_check": "both",
-          "fractional_trading": true,
-          "max_margin_multiplier": "4",
-          "trade_confirm_email": "none"
-        },
-        "account_number": "555",
-        "status": "ACTIVE",
-        "currency": "USD",
-        "cash": "15.77",
-        "accrued_fees": "0",
-        "account_blocked": false,
-        "created_at": "2020-04-15T08:26:42.566072Z",
-        "multiplier": "1",
-        "shorting_enabled": false,
-        "equity": "259.59",
-        "balance": null,
-        "balance_asof": "2024-04-15"
-      }
-      """;
-
       var clientStub = new Mock<HttpClient>();
       var messageStub = new Mock<HttpRequestMessage>();
 
@@ -156,13 +228,117 @@ namespace Tests
         Client = clientStub.Object
       };
 
-      var res = await service.Send<Sample>(messageStub.Object, service.Options);
+      var res = await service.Send<Sample1>(messageStub.Object, service.Options);
 
       Assert.Null(res.Error);
-      Assert.True(res.Data.UserConfigurations.FractionalTrading);
-      Assert.Equal(15.77, res.Data.Cash);
-      Assert.Equal(0, res.Data.Balance);
-      Assert.Equal(DateTime.Parse("2020-04-15T08:26:42.566072Z") + "", res.Data.CreatedAt.Value + "");
+
+      Assert.True(res.Data.UserConfigurations.Bool1);
+      Assert.Equal(1, res.Data.UserConfigurations.Int1);
+      Assert.Equal(4.5, res.Data.UserConfigurations.Double1);
+      Assert.Equal("none", res.Data.UserConfigurations.String1);
+
+      Assert.True(res.Data.Bool1);
+      Assert.False(res.Data.Bool2);
+      Assert.True(res.Data.Bool3);
+      Assert.False(res.Data.Bool4);
+      Assert.False(res.Data.Bool5);
+      Assert.False(res.Data.Bool6);
+
+      Assert.Equal(5, res.Data.Int1);
+      Assert.Equal(5, res.Data.Int2);
+      Assert.Equal(-5, res.Data.Int3);
+      Assert.Equal(-5, res.Data.Int4);
+      Assert.Equal(0, res.Data.Int5);
+      Assert.Equal(0, res.Data.Int6);
+      Assert.Equal(0, res.Data.Int7);
+
+      Assert.Equal(5.555, res.Data.Double1);
+      Assert.Equal(5.555, res.Data.Double2);
+      Assert.Equal(-5.555, res.Data.Double3);
+      Assert.Equal(-5.555, res.Data.Double4);
+      Assert.Equal(0, res.Data.Double5);
+      Assert.Equal(0, res.Data.Double6);
+      Assert.Equal(0, res.Data.Double7);
+
+      Assert.Equal(DateTime.Parse("2020-04-15T08:26:42.566072Z") + "", res.Data.Date1 + "");
+      Assert.Equal(DateTime.Parse("2020-04-15") + "", res.Data.Date2 + "");
+      Assert.Equal(default(DateTime) + "", res.Data.Date3 + "");
+      Assert.Equal(default(DateTime) + "", res.Data.Date4 + "");
+      Assert.Equal(default(DateTime) + "", res.Data.Date5 + "");
+
+      Assert.Equal(string.Join(",", new int[] { 5, 5, -5, -5, 0, 0 }), string.Join(",", res.Data.List1));
+      Assert.Equal(string.Join(",", new double[] { 5.555, 5.555, -5.555, -5.555, 0, 0 }), string.Join(",", res.Data.List2));
+
+      Assert.Equal(string.Join(",", new int[] { 5, 5, -5, -5, 0, 0 }), string.Join(",", res.Data.Array1));
+      Assert.Equal(string.Join(",", new double[] { 5.555, 5.555, -5.555, -5.555, 0, 0 }), string.Join(",", res.Data.Array2));
+    }
+
+    [Fact]
+    public async Task DeserializeNulls()
+    {
+      var clientStub = new Mock<HttpClient>();
+      var messageStub = new Mock<HttpRequestMessage>();
+
+      clientStub
+        .Setup(o => o.SendAsync(
+          It.IsAny<HttpRequestMessage>(),
+          It.IsAny<CancellationToken>()
+        ))
+        .ReturnsAsync(new HttpResponseMessage()
+        {
+          StatusCode = HttpStatusCode.OK,
+          Content = new StringContent(responseSample),
+        }, TimeSpan.FromSeconds(1))
+        .Verifiable();
+
+      var service = new Service
+      {
+        Client = clientStub.Object
+      };
+
+      var res = await service.Send<Sample2>(messageStub.Object, service.Options);
+
+      Assert.Null(res.Error);
+
+      Assert.True(res.Data.UserConfigurations.Bool1);
+      Assert.Equal(1, res.Data.UserConfigurations.Int1);
+      Assert.Equal(4.5, res.Data.UserConfigurations.Double1);
+      Assert.Equal("none", res.Data.UserConfigurations.String1);
+
+      Assert.True(res.Data.Bool1);
+      Assert.False(res.Data.Bool2);
+      Assert.True(res.Data.Bool3);
+      Assert.False(res.Data.Bool4);
+      Assert.Null(res.Data.Bool5);
+      Assert.False(res.Data.Bool6);
+
+      Assert.Equal(5, res.Data.Int1);
+      Assert.Equal(5, res.Data.Int2);
+      Assert.Equal(-5, res.Data.Int3);
+      Assert.Equal(-5, res.Data.Int4);
+      Assert.Equal(0, res.Data.Int5);
+      Assert.Equal(0, res.Data.Int6);
+      Assert.Null(res.Data.Int7);
+
+      Assert.Equal(5.555, res.Data.Double1);
+      Assert.Equal(5.555, res.Data.Double2);
+      Assert.Equal(-5.555, res.Data.Double3);
+      Assert.Equal(-5.555, res.Data.Double4);
+      Assert.Equal(0, res.Data.Double5);
+      Assert.Equal(0, res.Data.Double6);
+      Assert.Null(res.Data.Double7);
+
+      Assert.Equal(DateTime.Parse("2020-04-15T08:26:42.566072Z") + "", res.Data.Date1 + "");
+      Assert.Equal(DateTime.Parse("2020-04-15") + "", res.Data.Date2 + "");
+      Assert.Equal(default(DateTime) + "", res.Data.Date3 + "");
+      Assert.Equal(default(DateTime) + "", res.Data.Date4 + "");
+      Assert.Null(res.Data.Date5);
+
+      Assert.Equal(string.Join(",", new int?[] { 5, 5, -5, -5, 0, null }), string.Join(",", res.Data.List1));
+      Assert.Equal(string.Join(",", new double?[] { 5.555, 5.555, -5.555, -5.555, 0, null }), string.Join(",", res.Data.List2));
+
+      Assert.Equal(string.Join(",", new int?[] { 5, 5, -5, -5, 0, null }), string.Join(",", res.Data.Array1));
+      Assert.Equal(string.Join(",", new double?[] { 5.555, 5.555, -5.555, -5.555, 0, null }), string.Join(",", res.Data.Array2));
     }
   }
 }

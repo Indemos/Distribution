@@ -4,11 +4,11 @@ using System.Text.Json.Serialization;
 
 namespace Distribution.Stream.Converters
 {
-  public class LongConverter : JsonConverter<long>
+  public class IntConverter : JsonConverter<int>
   {
     public override bool HandleNull => true;
 
-    public override long Read(
+    public override int Read(
       ref Utf8JsonReader reader,
       Type dataType,
       JsonSerializerOptions options)
@@ -16,15 +16,15 @@ namespace Distribution.Stream.Converters
       switch (reader.TokenType)
       {
         case JsonTokenType.Null: return 0;
-        case JsonTokenType.Number: return reader.GetInt64();
+        case JsonTokenType.Number: return reader.GetInt32();
       }
 
-      return long.TryParse(reader.GetString(), out var o) ? o : default;
+      return int.TryParse(reader.GetString(), out var o) ? o : default;
     }
 
     public override void Write(
       Utf8JsonWriter writer,
-      long modelToWrite,
+      int modelToWrite,
       JsonSerializerOptions options) =>
       JsonSerializer.Serialize(writer, modelToWrite, modelToWrite.GetType(), options);
   }

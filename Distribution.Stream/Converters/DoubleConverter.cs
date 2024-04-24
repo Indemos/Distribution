@@ -11,8 +11,16 @@ namespace Distribution.Stream.Converters
     public override double Read(
       ref Utf8JsonReader reader,
       Type dataType,
-      JsonSerializerOptions options) =>
-      double.TryParse(reader.GetString(), out var o) ? o : default;
+      JsonSerializerOptions options)
+    {
+      switch (reader.TokenType)
+      {
+        case JsonTokenType.Null: return 0;
+        case JsonTokenType.Number: return reader.GetDouble();
+      }
+
+      return double.TryParse(reader.GetString(), out var o) ? o : default;
+    }
 
     public override void Write(
       Utf8JsonWriter writer,
