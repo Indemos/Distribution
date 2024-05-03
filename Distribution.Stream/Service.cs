@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Distribution.Stream
 {
-  public class Service
+  public class Service : IDisposable
   {
     /// <summary>
     /// Max execution time
@@ -135,7 +135,9 @@ namespace Distribution.Stream
         var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false);
         var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
 
-        if ((int)res.StatusCode >= 400)
+        response.Status = (int)res.StatusCode;
+
+        if (response.Status >= 400)
         {
           response.Error = await res.Content.ReadAsStringAsync();
           return response;
