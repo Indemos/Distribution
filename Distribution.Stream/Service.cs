@@ -139,7 +139,7 @@ namespace Distribution.Stream
 
         if (response.Status >= 400)
         {
-          response.Error = await res.Content.ReadAsStringAsync();
+          response.Error = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
           return response;
         }
 
