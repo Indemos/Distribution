@@ -208,6 +208,21 @@ namespace Tests
     }
 
     [Fact]
+    public void Cross()
+    {
+      var service = new Service();
+
+      var x1 = JsonSerializer.Deserialize<Sample1>(responseSample, service.Options);
+      var x2 = JsonSerializer.Deserialize<Sample2>(responseSample, service.Options);
+      var x3 = JsonSerializer.Serialize(x1);
+      var x4 = JsonSerializer.Serialize(x2);
+      var x5 = JsonSerializer.Deserialize<Sample1>(x3, service.Options);
+      var x6 = JsonSerializer.Deserialize<Sample1>(x4, service.Options);
+      var x7 = JsonSerializer.Deserialize<Sample2>(x3, service.Options);
+      var x8 = JsonSerializer.Deserialize<Sample2>(x4, service.Options);
+    }
+
+    [Fact]
     public async Task Deserialize()
     {
       var clientStub = new Mock<HttpClient>();

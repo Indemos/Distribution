@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,13 +20,12 @@ namespace Distribution.Stream.Converters
         case JsonTokenType.Number: return reader.GetInt64();
       }
 
-      return long.TryParse(reader.GetString(), out var o) ? o : default;
+      return long.TryParse(Encoding.ASCII.GetString(reader.ValueSpan), out var o) ? o : default;
     }
 
     public override void Write(
       Utf8JsonWriter writer,
       long modelToWrite,
-      JsonSerializerOptions options) =>
-      JsonSerializer.Serialize(writer, modelToWrite, modelToWrite.GetType(), options);
+      JsonSerializerOptions options) => writer.WriteStringValue($"{modelToWrite}");
   }
 }

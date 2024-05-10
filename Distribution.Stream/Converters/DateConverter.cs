@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,12 +13,11 @@ namespace Distribution.Stream.Converters
       ref Utf8JsonReader reader,
       Type dataType,
       JsonSerializerOptions options) =>
-      DateTime.TryParse(reader.GetString(), out var o) ? o : default;
+      DateTime.TryParse(Encoding.ASCII.GetString(reader.ValueSpan), out var o) ? o : default;
 
     public override void Write(
       Utf8JsonWriter writer,
       DateTime modelToWrite,
-      JsonSerializerOptions options) =>
-      JsonSerializer.Serialize(writer, modelToWrite, modelToWrite.GetType(), options);
+      JsonSerializerOptions options) => writer.WriteStringValue($"{modelToWrite}");
   }
 }

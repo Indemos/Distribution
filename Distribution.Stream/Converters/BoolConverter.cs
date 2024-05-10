@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,18 +16,17 @@ namespace Distribution.Stream.Converters
     {
       switch (reader.TokenType)
       {
-        case JsonTokenType.True: return true;
         case JsonTokenType.Null: 
         case JsonTokenType.False: return false;
+        case JsonTokenType.True: return true;
       }
 
-      return bool.TryParse(reader.GetString(), out var o) && o;
+      return bool.TryParse(Encoding.ASCII.GetString(reader.ValueSpan), out var o) && o;
     }
 
     public override void Write(
       Utf8JsonWriter writer,
       bool modelToWrite,
-      JsonSerializerOptions options) =>
-      JsonSerializer.Serialize(writer, modelToWrite, modelToWrite.GetType(), options);
+      JsonSerializerOptions options) => writer.WriteStringValue($"{modelToWrite}");
   }
 }
