@@ -89,6 +89,7 @@ namespace Tests
     public bool Bool1 { get; set; }
     public int Int1 { get; set; }
     public string String1 { get; set; }
+    public string String2 { get; set; }
     public double Double1 { get; set; }
   }
 
@@ -100,8 +101,9 @@ namespace Tests
         "int1": "1",
         "bool1": true,
         "double1": "4.5",
-        "string1": "none"
-      },
+        "string1": "none",
+        "string2": 55.535
+          },
       "bool1": true,
       "bool2": false, 
       "bool3": "true",
@@ -236,6 +238,7 @@ namespace Tests
       Assert.Equal(1, res.Data.UserConfigurations.Int1);
       Assert.Equal(4.5, res.Data.UserConfigurations.Double1);
       Assert.Equal("none", res.Data.UserConfigurations.String1);
+      Assert.Equal("55.535", res.Data.UserConfigurations.String2);
 
       Assert.True(res.Data.Bool1);
       Assert.False(res.Data.Bool2);

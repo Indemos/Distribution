@@ -58,7 +58,8 @@ namespace Distribution.Stream
           new Converters.IntConverter(),
           new Converters.BoolConverter(),
           new Converters.DateConverter(),
-          new Converters.DoubleConverter()
+          new Converters.DoubleConverter(),
+          new Converters.StringConverter()
         },
         TypeInfoResolver = GetResolver()
       };
