@@ -1,3 +1,4 @@
+using Distribution.Models;
 using System;
 using System.Threading;
 using System.Threading.Channels;
@@ -8,7 +9,7 @@ namespace Distribution.Services
   public class ScheduleService : IDisposable
   {
     protected int _count;
-    protected Channel<Action> _queue;
+    protected Channel<ActionModel> _queue;
     protected CancellationTokenSource _cancellation;
     protected ManualResetEvent _semaphore = new ManualResetEvent(true);
 
@@ -29,7 +30,7 @@ namespace Distribution.Services
     {
       _count = count;
       _cancellation = cancellation;
-      _queue = Channel.CreateBounded<Action>(count);
+      _queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
 
       Task
         .Factory
@@ -39,9 +40,9 @@ namespace Distribution.Services
           {
             _semaphore.WaitOne();
 
-            while (_queue.Reader.TryRead(out var action))
+            while (_queue.Reader.TryRead(out var actionModel))
             {
-              action();
+              actionModel.Action();
             }
 
             _semaphore.Reset();
@@ -57,6 +58,7 @@ namespace Distribution.Services
     /// </summary>
     public virtual void Dispose()
     {
+      _semaphore?.Dispose();
       _cancellation?.Cancel();
       _queue?.Writer?.TryComplete();
     }
@@ -65,22 +67,27 @@ namespace Distribution.Services
     /// Action processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Action action)
+    public virtual TaskCompletionSource<bool> Send(Action action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          action();
-          completion.TrySetResult(true);
+          try
+          {
+            action();
+            completion.TrySetResult(true);
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -89,21 +96,26 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<T> action)
+    public virtual TaskCompletionSource<T> Send<T>(Func<T> action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          completion.TrySetResult(action());
+          try
+          {
+            completion.TrySetResult(action());
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -112,22 +124,27 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Func<Task> action)
+    public virtual TaskCompletionSource<bool> Send(Func<Task> action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          action().GetAwaiter().GetResult();
-          completion.TrySetResult(true);
+          try
+          {
+            action().GetAwaiter().GetResult();
+            completion.TrySetResult(true);
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -136,21 +153,26 @@ namespace Distribution.Services
     /// Task delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action)
+    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          completion.TrySetResult(action().GetAwaiter().GetResult());
+          try
+          {
+            completion.TrySetResult(action().GetAwaiter().GetResult());
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -159,22 +181,27 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Task action)
+    public virtual TaskCompletionSource<bool> Send(Task action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          action.GetAwaiter().GetResult();
-          completion.TrySetResult(true);
+          try
+          {
+            action.GetAwaiter().GetResult();
+            completion.TrySetResult(true);
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -183,21 +210,27 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Task<T> action)
+    /// <param name="isRemovable"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Task<T> action, bool isRemovable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-      Enqueue(() =>
+      var actionModel = new ActionModel
       {
-        try
+        IsRemovable = isRemovable,
+        Action = () =>
         {
-          completion.TrySetResult(action.GetAwaiter().GetResult());
+          try
+          {
+            completion.TrySetResult(action.GetAwaiter().GetResult());
+          }
+          catch (Exception e)
+          {
+            completion.TrySetException(e);
+          }
         }
-        catch (Exception e)
-        {
-          completion.TrySetException(e);
-        }
-      });
+      };
+
+      Enqueue(actionModel);
 
       return completion;
     }
@@ -205,15 +238,18 @@ namespace Distribution.Services
     /// <summary>
     /// Enqueue
     /// </summary>
-    /// <param name="action"></param>
-    protected virtual void Enqueue(Action action)
+    /// <param name="actionModel"></param>
+    protected virtual void Enqueue(ActionModel actionModel)
     {
-      if (_queue.Reader.Count >= _count)
+      if (_queue.Reader.TryPeek(out var previousAction))
       {
-        _queue.Reader.TryRead(out _);
+        if (previousAction.IsRemovable && _queue.Reader.Count >= _count)
+        {
+          _queue.Reader.TryRead(out _);
+        }
       }
 
-      _queue.Writer.WriteAsync(action);
+      _queue.Writer.WriteAsync(actionModel);
       _semaphore.Set();
     }
   }

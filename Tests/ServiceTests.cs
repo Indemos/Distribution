@@ -35,6 +35,7 @@ namespace Tests
     public string String1 { get; set; }
     public string String2 { get; set; }
     public string String3 { get; set; }
+    public string String4 { get; set; }
     public List<int> List1 { get; set; }
     public List<double> List2 { get; set; }
     public int[] Array1 { get; set; }
@@ -72,6 +73,7 @@ namespace Tests
     public string String1 { get; set; }
     public string String2 { get; set; }
     public string String3 { get; set; }
+    public string String4 { get; set; }
     public List<int?> List1 { get; set; }
     public List<double?> List2 { get; set; }
     public int?[] Array1 { get; set; }
@@ -124,6 +126,10 @@ namespace Tests
       "double5": "",
       "double6": "none",
       "double7": null,
+      "string1": 5,
+      "string2": 5.5,
+      "string3": true,
+      "string4": null,
       "date1": "2020-04-15T08:26:42.566072Z",
       "date2": "2020-04-15",
       "date3": "",
@@ -322,6 +328,11 @@ namespace Tests
       Assert.Equal(1, res.Data.UserConfigurations.Int1);
       Assert.Equal(4.5, res.Data.UserConfigurations.Double1);
       Assert.Equal("none", res.Data.UserConfigurations.String1);
+
+      Assert.Equal("5", res.Data.String1);
+      Assert.Equal("5.5", res.Data.String2);
+      Assert.Equal("true", res.Data.String3);
+      Assert.Equal("null", res.Data.String4);
 
       Assert.True(res.Data.Bool1);
       Assert.False(res.Data.Bool2);
