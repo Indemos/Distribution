@@ -1,4 +1,3 @@
-using Distribution.Stream.Converters;
 using Distribution.Stream.Models;
 using System;
 using System.Linq;
@@ -136,9 +135,9 @@ namespace Distribution.Stream
         var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false);
         var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
 
-        response.Status = (int)res.StatusCode;
+        response.Message = res;
 
-        if (response.Status >= 400)
+        if ((int)res.StatusCode >= 400)
         {
           response.Error = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
           return response;
