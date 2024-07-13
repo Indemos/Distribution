@@ -5,7 +5,7 @@ namespace Distribution.Stream.Extensions
 {
   public static class DictionaryExtensions
   {
-    public static string ToQuery(this IDictionary input)
+    public static string Query(this IDictionary input)
     {
       var inputs = HttpUtility.ParseQueryString(string.Empty);
 
