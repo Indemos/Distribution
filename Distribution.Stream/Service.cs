@@ -132,18 +132,19 @@ namespace Distribution.Stream
       {
         cts ??= new CancellationTokenSource(Timeout);
 
-        var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false);
-        var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
-
-        response.Message = res;
-
-        if ((int)res.StatusCode >= 400)
+        using (var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false))
+        using (var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false))
         {
-          response.Error = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
-          return response;
-        }
+          response.Message = res;
 
-        response.Data = await JsonSerializer.DeserializeAsync<T>(content, Options).ConfigureAwait(false);
+          if (res.IsSuccessStatusCode is false)
+          {
+            response.Error = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+            return response;
+          }
+
+          response.Data = await JsonSerializer.DeserializeAsync<T>(content, Options).ConfigureAwait(false);
+        }
       }
       catch (Exception e)
       {
