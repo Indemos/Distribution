@@ -46,6 +46,7 @@ namespace Distribution.Stream
       {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
         ReadCommentHandling = JsonCommentHandling.Skip,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         NumberHandling =
@@ -99,10 +100,7 @@ namespace Distribution.Stream
     /// <param name="options"></param>
     /// <param name="cts"></param>
     /// <returns></returns>
-    public virtual async Task<System.IO.Stream> Stream(
-      HttpRequestMessage message,
-      JsonSerializerOptions options = null,
-      CancellationTokenSource cts = null)
+    public virtual async Task<System.IO.Stream> Stream(HttpRequestMessage message, CancellationTokenSource cts = null)
     {
       cts ??= new CancellationTokenSource(Timeout);
 
@@ -143,7 +141,7 @@ namespace Distribution.Stream
             return response;
           }
 
-          response.Data = await JsonSerializer.DeserializeAsync<T>(content, Options).ConfigureAwait(false);
+          response.Data = await JsonSerializer.DeserializeAsync<T>(content, options).ConfigureAwait(false);
         }
       }
       catch (Exception e)
