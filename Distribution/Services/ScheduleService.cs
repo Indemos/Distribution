@@ -9,14 +9,15 @@ namespace Distribution.Services
   public class ScheduleService : IDisposable
   {
     protected int _count;
+    protected OptionModel _option;
+    protected ManualResetEvent _semaphore;
     protected Channel<ActionModel> _queue;
     protected CancellationTokenSource _cancellation;
-    protected ManualResetEvent _semaphore = new ManualResetEvent(true);
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
+    public ScheduleService() : this(1, new CancellationTokenSource())
     {
     }
 
@@ -26,31 +27,33 @@ namespace Distribution.Services
     /// <param name="count"></param>
     /// <param name="scheduler"></param>
     /// <param name="cancellation"></param>
-    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
+    public ScheduleService(int count, CancellationTokenSource cancellation)
     {
       _count = count;
       _cancellation = cancellation;
+      _semaphore = new ManualResetEvent(true);
       _queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
+      _option = new OptionModel
+      {
+        IsRemovable = true
+      };
 
-      Task
-        .Factory
-        .StartNew(() =>
+      var process = new Thread(() =>
+      {
+        while (cancellation.IsCancellationRequested is false)
         {
-          while (cancellation.IsCancellationRequested is false)
+          _semaphore.WaitOne();
+
+          while (_queue.Reader.TryRead(out var actionModel))
           {
-            _semaphore.WaitOne();
-
-            while (_queue.Reader.TryRead(out var actionModel))
-            {
-              actionModel.Action();
-            }
-
-            _semaphore.Reset();
+            actionModel.Action();
           }
-        },
-        cancellation.Token,
-        TaskCreationOptions.LongRunning,
-        scheduler);
+
+          _semaphore.Reset();
+        }
+      });
+
+      process.Start();
     }
 
     /// <summary>
@@ -67,12 +70,13 @@ namespace Distribution.Services
     /// Action processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Action action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<bool> Send(Action action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -96,12 +100,13 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<T> action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Func<T> action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -124,12 +129,13 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Func<Task> action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<bool> Send(Func<Task> action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -153,12 +159,13 @@ namespace Distribution.Services
     /// Task delegate processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -181,12 +188,13 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    public virtual TaskCompletionSource<bool> Send(Task action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<bool> Send(Task action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -210,13 +218,13 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="isRemovable"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Task<T> action, bool isRemovable = true)
+    /// <param name="option"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Task<T> action, OptionModel option = null)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        IsRemovable = isRemovable,
+        Option = option,
         Action = () =>
         {
           try
@@ -243,7 +251,7 @@ namespace Distribution.Services
     {
       if (_queue.Reader.TryPeek(out var previousAction))
       {
-        if (previousAction.IsRemovable && _queue.Reader.Count >= _count)
+        if ((previousAction.Option ?? _option).IsRemovable && _queue.Reader.Count >= _count)
         {
           _queue.Reader.TryRead(out _);
         }

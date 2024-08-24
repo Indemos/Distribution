@@ -1,6 +1,6 @@
 namespace Distribution.Models
 {
-  public struct EnvelopeModel
+  public class EnvelopeModel
   {
     public string Name { get; set; }
     public string Descriptor { get; set; }
