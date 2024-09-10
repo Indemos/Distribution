@@ -42,14 +42,14 @@ namespace Distribution.Services
       {
         while (cancellation.IsCancellationRequested is false)
         {
-          _semaphore.WaitOne();
+          _semaphore?.WaitOne();
 
           while (_queue.Reader.TryRead(out var actionModel))
           {
             actionModel.Action();
           }
 
-          _semaphore.Reset();
+          _semaphore?.Reset();
         }
       });
 
@@ -61,9 +61,11 @@ namespace Distribution.Services
     /// </summary>
     public virtual void Dispose()
     {
-      _semaphore?.Dispose();
-      _cancellation?.Cancel();
       _queue?.Writer?.TryComplete();
+      _cancellation?.Cancel();
+      _semaphore?.Dispose();
+
+      _semaphore = null;
     }
 
     /// <summary>
