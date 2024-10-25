@@ -38,9 +38,13 @@ namespace Distribution.Services
       {
         while (_cancellation.IsCancellationRequested is false)
         {
-          _semaphore.WaitOne();
-          while (_queue.Reader.TryRead(out var actionModel)) actionModel.Action();
-          _semaphore.Reset();
+          try
+          {
+            _semaphore.WaitOne();
+            while (_queue.Reader.TryRead(out var actionModel)) actionModel.Action();
+            _semaphore.Reset();
+          }
+          catch (ObjectDisposedException) {}
         }
       });
 
@@ -240,21 +244,20 @@ namespace Distribution.Services
     /// <param name="actionModel"></param>
     protected virtual void Enqueue(ActionModel actionModel)
     {
-      while (_cancellation.IsCancellationRequested)
+      try
       {
-        return;
-      }
-
-      if (_queue.Reader.TryPeek(out var previousAction))
-      {
-        if ((previousAction.Option ?? _option).IsRemovable && _queue.Reader.Count >= _count)
+        if (_queue.Reader.TryPeek(out var previousAction))
         {
-          _queue.Reader.TryRead(out _);
+          if ((previousAction.Option ?? _option).IsRemovable && _queue.Reader.Count >= _count)
+          {
+            _queue.Reader.TryRead(out _);
+          }
         }
-      }
 
-      _queue.Writer.WriteAsync(actionModel);
-      _semaphore.Set();
+        _queue.Writer.WriteAsync(actionModel);
+        _semaphore.Set();
+      }
+      catch (ObjectDisposedException) {}
     }
   }
 }
