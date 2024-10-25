@@ -25,7 +25,6 @@ namespace Distribution.Services
     /// Constructor
     /// </summary>
     /// <param name="count"></param>
-    /// <param name="scheduler"></param>
     /// <param name="cancellation"></param>
     public ScheduleService(int count, CancellationTokenSource cancellation)
     {
@@ -33,23 +32,15 @@ namespace Distribution.Services
       _cancellation = cancellation;
       _semaphore = new ManualResetEvent(true);
       _queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
-      _option = new OptionModel
-      {
-        IsRemovable = true
-      };
+      _option = new OptionModel { IsRemovable = true };
 
       var process = new Thread(() =>
       {
-        while (cancellation.IsCancellationRequested is false)
+        while (_cancellation.IsCancellationRequested is false)
         {
-          _semaphore?.WaitOne();
-
-          while (_queue.Reader.TryRead(out var actionModel))
-          {
-            actionModel.Action();
-          }
-
-          _semaphore?.Reset();
+          _semaphore.WaitOne();
+          while (_queue.Reader.TryRead(out var actionModel)) actionModel.Action();
+          _semaphore.Reset();
         }
       });
 
@@ -64,8 +55,6 @@ namespace Distribution.Services
       _queue?.Writer?.TryComplete();
       _cancellation?.Cancel();
       _semaphore?.Dispose();
-
-      _semaphore = null;
     }
 
     /// <summary>
@@ -251,6 +240,11 @@ namespace Distribution.Services
     /// <param name="actionModel"></param>
     protected virtual void Enqueue(ActionModel actionModel)
     {
+      while (_cancellation.IsCancellationRequested)
+      {
+        return;
+      }
+
       if (_queue.Reader.TryPeek(out var previousAction))
       {
         if ((previousAction.Option ?? _option).IsRemovable && _queue.Reader.Count >= _count)
