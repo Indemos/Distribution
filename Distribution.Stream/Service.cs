@@ -55,11 +55,20 @@ namespace Distribution.Stream
           JsonNumberHandling.WriteAsString,
         Converters =
         {
-          new Converters.IntConverter(),
-          new Converters.BoolConverter(),
-          new Converters.DateConverter(),
-          new Converters.DoubleConverter(),
-          new Converters.StringConverter()
+          new Converters.CustomConverter<bool>(),
+          new Converters.CustomConverter<byte>(),
+          new Converters.CustomConverter<sbyte>(),
+          new Converters.CustomConverter<short>(),
+          new Converters.CustomConverter<ushort>(),
+          new Converters.CustomConverter<int>(),
+          new Converters.CustomConverter<uint>(),
+          new Converters.CustomConverter<long>(),
+          new Converters.CustomConverter<ulong>(),
+          new Converters.CustomConverter<float>(),
+          new Converters.CustomConverter<double>(),
+          new Converters.CustomConverter<decimal>(),
+          new Converters.CustomConverter<char>(),
+          new Converters.CustomConverter<string>()
         },
         TypeInfoResolver = GetResolver()
       };
