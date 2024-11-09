@@ -68,7 +68,10 @@ namespace Distribution.Stream
           new Converters.CustomConverter<double>(),
           new Converters.CustomConverter<decimal>(),
           new Converters.CustomConverter<char>(),
-          new Converters.CustomConverter<string>()
+          new Converters.CustomConverter<string>(),
+          new Converters.CustomConverter<DateOnly>(),
+          new Converters.CustomConverter<TimeOnly>(),
+          new Converters.CustomConverter<DateTime>()
         },
         TypeInfoResolver = GetResolver()
       };

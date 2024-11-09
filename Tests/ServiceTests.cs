@@ -331,8 +331,8 @@ namespace Tests
 
       Assert.Equal("5", res.Data.String1);
       Assert.Equal("5.5", res.Data.String2);
-      Assert.Equal("true", res.Data.String3);
-      Assert.Equal("null", res.Data.String4);
+      Assert.Equal("True", res.Data.String3);
+      Assert.Null(res.Data.String4);
 
       Assert.True(res.Data.Bool1);
       Assert.False(res.Data.Bool2);

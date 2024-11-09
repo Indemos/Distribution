@@ -12,7 +12,15 @@ namespace Distribution.Stream.Converters
     {
       try
       {
-        return JsonSerializer.Deserialize<T>(ref reader, options);
+        if (reader.TokenType is JsonTokenType.Null)
+        {
+          return default;
+        }
+
+        var value = JsonDocument.ParseValue(ref reader).RootElement;
+        var response = (T)Convert.ChangeType($"{value}", dataType);
+
+        return response;
       }
       catch (Exception)
       {
@@ -20,9 +28,9 @@ namespace Distribution.Stream.Converters
       }
     }
 
-    public override void Write(Utf8JsonWriter writer, T modelToWrite, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-      writer.WriteStringValue($"{modelToWrite}");
+      writer.WriteStringValue($"{value}");
     }
   }
 }
