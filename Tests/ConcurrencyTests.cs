@@ -1,5 +1,6 @@
 using Common;
 using Distribution.Domains;
+using Distribution.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -30,6 +31,15 @@ namespace Tests
       scene.Subscribe<CountMessage>(o => Assert.Equal(message.Id, o.Id));
       scene.Subscribe<DemoResponse>(o => Assert.Equal(message.Id, o.Id));
       scene.Subscribe<Scene>(o => throw new Exception("Message does not exist"));
+    }
+
+    [Fact]
+    public async void Schedule()
+    {
+      var scene = new ScheduleService();
+      var message = scene.Send(() => Task.Run(() => Task.CompletedTask));
+
+      var x = await message.Task;
     }
   }
 }

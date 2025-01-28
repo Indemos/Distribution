@@ -17,7 +17,7 @@ namespace Distribution.Services
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, new CancellationTokenSource())
+    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
     {
     }
 
@@ -26,7 +26,7 @@ namespace Distribution.Services
     /// </summary>
     /// <param name="count"></param>
     /// <param name="cancellation"></param>
-    public ScheduleService(int count, CancellationTokenSource cancellation)
+    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
     {
       _count = count;
       _cancellation = cancellation;
@@ -34,21 +34,20 @@ namespace Distribution.Services
       _queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
       _option = new OptionModel { IsRemovable = true };
 
-      var process = new Thread(() =>
+      Task.Factory.StartNew(() =>
       {
-        while (_cancellation.IsCancellationRequested is false)
+        while (cancellation?.IsCancellationRequested is false)
         {
-          try
-          {
-            _semaphore.WaitOne();
-            while (_queue.Reader.TryRead(out var actionModel)) actionModel.Action();
-            _semaphore.Reset();
-          }
-          catch (ObjectDisposedException) {}
-        }
-      });
+          _semaphore?.WaitOne();
 
-      process.Start();
+          while (_queue?.Reader?.TryRead(out var actionModel) ?? false)
+          {
+            actionModel.Action();
+          }
+
+          _semaphore?.Reset();
+        }
+      }, cancellation?.Token ?? CancellationToken.None, TaskCreationOptions.LongRunning, scheduler);
     }
 
     /// <summary>
@@ -56,9 +55,14 @@ namespace Distribution.Services
     /// </summary>
     public virtual void Dispose()
     {
-      _queue?.Writer?.TryComplete();
       _cancellation?.Cancel();
       _semaphore?.Dispose();
+      _cancellation?.Dispose();
+      _queue?.Writer?.TryComplete();
+
+      _queue = null;
+      _semaphore = null;
+      _cancellation = null;
     }
 
     /// <summary>
