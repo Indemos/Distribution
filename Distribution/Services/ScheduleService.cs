@@ -31,11 +31,11 @@ namespace Distribution.Services
       this.cancellation = cancellation;
       this.queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
 
-      process = new Thread(async () =>
+      process = new Thread(() =>
       {
         try
         {
-          await foreach (var actionModel in queue.Reader.ReadAllAsync(cancellation.Token))
+          foreach (var actionModel in queue.Reader.ReadAllAsync(cancellation.Token).ToBlockingEnumerable())
           {
             actionModel.Run();
           }
