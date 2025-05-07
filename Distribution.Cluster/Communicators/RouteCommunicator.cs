@@ -14,7 +14,7 @@ namespace Distribution.Cluster.Communicators
 {
   public class RouteCommunicator : Communicator, ICommunicator
   {
-    protected HttpClient _client = null;
+    protected HttpClient client = null;
 
     /// <summary>
     /// Constructor
@@ -28,7 +28,7 @@ namespace Distribution.Cluster.Communicators
         PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1)
       };
 
-      _client = new HttpClient(socket);
+      client = new HttpClient(socket);
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ namespace Distribution.Cluster.Communicators
     /// </summary>
     public override void Dispose()
     {
-      _client.Dispose();
+      client.Dispose();
     }
 
     /// <summary>
@@ -227,7 +227,7 @@ namespace Distribution.Cluster.Communicators
 
       try
       {
-        var response = await _client
+        var response = await client
           .SendAsync(message, cts.Token)
           .ConfigureAwait(false);
 

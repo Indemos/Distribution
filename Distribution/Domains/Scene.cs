@@ -58,27 +58,27 @@ namespace Distribution.Domains
     /// <summary>
     /// Messages
     /// </summary>
-    protected IDictionary<string, Type> _messages;
+    protected IDictionary<string, Type> messages;
 
     /// <summary>
     /// Activations
     /// </summary>
-    protected IDictionary<string, object> _instances;
+    protected IDictionary<string, object> instances;
 
     /// <summary>
     /// Observers
     /// </summary>
-    protected IDictionary<string, ActorModel> _observers;
+    protected IDictionary<string, ActorModel> observers;
 
     /// <summary>
     /// Observers that can provide response
     /// </summary>
-    protected IDictionary<string, ActorModel> _processors;
+    protected IDictionary<string, ActorModel> processors;
 
     /// <summary>
     /// Message subscribers
     /// </summary>
-    protected IDictionary<string, Action<object>> _subscribers;
+    protected IDictionary<string, Action<object>> subscribers;
 
     /// <summary>
     /// Scheduler
@@ -90,11 +90,11 @@ namespace Distribution.Domains
     /// </summary>
     public Scene()
     {
-      _messages = new ConcurrentDictionary<string, Type>();
-      _instances = new ConcurrentDictionary<string, object>();
-      _observers = new ConcurrentDictionary<string, ActorModel>();
-      _processors = new ConcurrentDictionary<string, ActorModel>();
-      _subscribers = new ConcurrentDictionary<string, Action<object>>();
+      messages = new ConcurrentDictionary<string, Type>();
+      instances = new ConcurrentDictionary<string, object>();
+      observers = new ConcurrentDictionary<string, ActorModel>();
+      processors = new ConcurrentDictionary<string, ActorModel>();
+      subscribers = new ConcurrentDictionary<string, Action<object>>();
 
       Scheduler = new ScheduleService();
 
@@ -107,7 +107,7 @@ namespace Distribution.Domains
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public virtual Type GetMessage(string name) => _messages[name];
+    public virtual Type GetMessage(string name) => messages[name];
 
     /// <summary>
     /// Subscribe to messages
@@ -118,10 +118,10 @@ namespace Distribution.Domains
     {
       var message = typeof(T).Name;
 
-      switch (_subscribers.ContainsKey(message))
+      switch (subscribers.ContainsKey(message))
       {
-        case true: _subscribers[message] += o => action((T)o); break;
-        case false: _subscribers[message] = o => action((T)o); break;
+        case true: subscribers[message] += o => action((T)o); break;
+        case false: subscribers[message] = o => action((T)o); break;
       }
     }
 
@@ -134,12 +134,12 @@ namespace Distribution.Domains
       var inputs = new[] { message };
       var descriptor = message.GetType().Name;
 
-      if (_subscribers.TryGetValue(descriptor, out var subscriber))
+      if (subscribers.TryGetValue(descriptor, out var subscriber))
       {
         subscriber(message);
       }
 
-      var observers = _observers.Select(observer => Scheduler.Send(() => 
+      var observers = this.observers.Select(observer => Scheduler.Send(() => 
       {
         var actor = GetInstance(observer.Key, observer.Value.Descriptor);
         var processor = observer.Value.Descriptor.Invoke(actor, inputs) as Task;
@@ -168,12 +168,12 @@ namespace Distribution.Domains
 
       var descriptor = message.GetType().Name;
 
-      if (_subscribers.TryGetValue(descriptor, out var subscriber))
+      if (subscribers.TryGetValue(descriptor, out var subscriber))
       {
         subscriber(message);
       }
 
-      if (_processors.TryGetValue(descriptor, out var processor))
+      if (processors.TryGetValue(descriptor, out var processor))
       {
         response = Scheduler.Send(() =>
         {
@@ -185,7 +185,7 @@ namespace Distribution.Domains
 
         }).Task;
 
-        if (_subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
+        if (subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
         {
           responseSubscriber(response);
         }
@@ -199,11 +199,11 @@ namespace Distribution.Domains
     /// </summary>
     public virtual void Dispose()
     {
-      _messages?.Clear();
-      _instances?.Clear();
-      _observers?.Clear();
-      _processors?.Clear();
-      _subscribers?.Clear();
+      messages?.Clear();
+      instances?.Clear();
+      observers?.Clear();
+      processors?.Clear();
+      subscribers?.Clear();
 
       Scheduler?.Dispose();
     }
@@ -216,12 +216,12 @@ namespace Distribution.Domains
     /// <returns></returns>
     protected virtual object GetInstance(string name, MethodInfo processor)
     {
-      if (_instances.ContainsKey(name))
+      if (instances.ContainsKey(name))
       {
-        return _instances[name];
+        return instances[name];
       }
 
-      return _instances[name] = Activator.CreateInstance(processor.DeclaringType);
+      return instances[name] = Activator.CreateInstance(processor.DeclaringType);
     }
 
     /// <summary>
@@ -258,8 +258,8 @@ namespace Distribution.Domains
 
         if (conditions.All(o => o))
         {
-          _messages[message.ParameterType.FullName] = message.ParameterType;
-          _processors[message.ParameterType.Name] = new ActorModel
+          messages[message.ParameterType.FullName] = message.ParameterType;
+          processors[message.ParameterType.Name] = new ActorModel
           {
             Descriptor = descriptor
           };
@@ -293,7 +293,7 @@ namespace Distribution.Domains
 
         if (conditions.All(o => o))
         {
-          _observers[descriptor.DeclaringType.FullName] = new ActorModel
+          observers[descriptor.DeclaringType.FullName] = new ActorModel
           {
             Descriptor = descriptor
           };

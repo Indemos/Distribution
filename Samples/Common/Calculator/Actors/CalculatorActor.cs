@@ -9,19 +9,19 @@ namespace Common
   /// </summary>
   public class CalculatorActor
   {
-    protected double _response = 0;
-    protected IList<string> _operations = new List<string>();
+    protected double response = 0;
+    protected IList<string> operations = new List<string>();
 
     [Processor]
     public virtual Task<OperationResponse> Increment(IncrementMessage message)
     {
-      _response += message.Input;
+      this.response += message.Input;
 
       SaveOperation($"+{message.Input}");
 
       var response = new OperationResponse
       {
-        Value = _response,
+        Value = this.response,
         Operation = nameof(Increment)
       };
 
@@ -31,13 +31,13 @@ namespace Common
     [Processor]
     public virtual Task<OperationResponse> Decrement(DecrementMessage message)
     {
-      _response -= message.Input;
+      this.response -= message.Input;
 
       SaveOperation($"-{message.Input}");
 
       var response = new OperationResponse
       {
-        Value = _response,
+        Value = this.response,
         Operation = nameof(Decrement)
       };
 
@@ -49,13 +49,13 @@ namespace Common
     {
       var response = new OperationResponse
       {
-        Value = _response,
+        Value = this.response,
         Operation = nameof(Summary)
       };
 
       return Task.FromResult(response);
     }
 
-    protected virtual void SaveOperation(string operation) => _operations.Add(operation);
+    protected virtual void SaveOperation(string operation) => operations.Add(operation);
   }
 }

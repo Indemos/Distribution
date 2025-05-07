@@ -5,12 +5,12 @@ namespace Distribution.Services
   /// </summary>
   public class InstanceService<T> where T: new()
   {
-    private static readonly T _instance = new T();
+    private static readonly T instance = new T();
 
     /// <summary>
     /// Single instance
     /// </summary>
-    public static T Instance => _instance;
+    public static T Instance => instance;
 
     /// <summary>
     /// Constructor

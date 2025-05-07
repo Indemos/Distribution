@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <OutputType>Library</OutputType>
@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.2.2</Version>
+    <Version>2.2.4</Version>
     <Description>General purpose virtual actor framework for peer-to-peer microservices or in-process communication within the same app with possible extension to blockchains.</Description>
     <Authors>artemiusgreat</Authors>
     <Copyright>indemos.com</Copyright>

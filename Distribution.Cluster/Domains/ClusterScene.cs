@@ -16,12 +16,12 @@ namespace Distribution.Cluster.Domains
 
       var descriptor = message.GetType().Name;
 
-      if (_subscribers.TryGetValue(descriptor, out var subscriber))
+      if (subscribers.TryGetValue(descriptor, out var subscriber))
       {
         subscriber(message);
       }
 
-      if (_processors.TryGetValue(descriptor, out var processor))
+      if (processors.TryGetValue(descriptor, out var processor))
       {
         response = Scheduler.Send(() =>
         {
@@ -33,7 +33,7 @@ namespace Distribution.Cluster.Domains
 
         }).Task;
 
-        if (_subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
+        if (subscribers.TryGetValue(response.GetType().Name, out var responseSubscriber))
         {
           responseSubscriber(response);
         }

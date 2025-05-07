@@ -8,16 +8,15 @@ namespace Distribution.Services
 {
   public class ScheduleService : IDisposable
   {
-    protected int _count;
-    protected OptionModel _option;
-    protected ManualResetEvent _semaphore;
-    protected Channel<ActionModel> _queue;
-    protected CancellationTokenSource _cancellation;
+    protected int count;
+    protected Thread process;
+    protected Channel<ActionModel> queue;
+    protected CancellationTokenSource cancellation;
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public ScheduleService() : this(1, TaskScheduler.Default, new CancellationTokenSource())
+    public ScheduleService() : this(1, new CancellationTokenSource())
     {
     }
 
@@ -26,28 +25,29 @@ namespace Distribution.Services
     /// </summary>
     /// <param name="count"></param>
     /// <param name="cancellation"></param>
-    public ScheduleService(int count, TaskScheduler scheduler, CancellationTokenSource cancellation)
+    public ScheduleService(int count, CancellationTokenSource cancellation)
     {
-      _count = count;
-      _cancellation = cancellation;
-      _semaphore = new ManualResetEvent(true);
-      _queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
-      _option = new OptionModel { IsRemovable = true };
+      this.count = count;
+      this.cancellation = cancellation;
+      this.queue = Channel.CreateBounded<ActionModel>(Environment.ProcessorCount * 100);
 
-      Task.Factory.StartNew(() =>
+      process = new Thread(async () =>
       {
-        while (cancellation?.IsCancellationRequested is false)
+        try
         {
-          _semaphore?.WaitOne();
-
-          while (_queue?.Reader?.TryRead(out var actionModel) ?? false)
+          await foreach (var actionModel in queue.Reader.ReadAllAsync(cancellation.Token))
           {
-            actionModel.Action();
+            actionModel.Run();
           }
-
-          _semaphore?.Reset();
         }
-      }, cancellation?.Token ?? CancellationToken.None, TaskCreationOptions.LongRunning, scheduler);
+        catch (OperationCanceledException) { }
+        catch (ObjectDisposedException) { }
+      })
+      {
+        IsBackground = true
+      };
+
+      process.Start();
     }
 
     /// <summary>
@@ -55,33 +55,34 @@ namespace Distribution.Services
     /// </summary>
     public virtual void Dispose()
     {
-      _cancellation?.Cancel();
-      _semaphore?.Dispose();
-      _cancellation?.Dispose();
-      _queue?.Writer?.TryComplete();
-
-      _queue = null;
-      _semaphore = null;
-      _cancellation = null;
+      try
+      {
+        cancellation?.Cancel();
+        queue?.Writer?.TryComplete();
+        cancellation?.Dispose();
+        process?.Join();
+      }
+      catch { }
     }
 
     /// <summary>
     /// Action processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<bool> Send(Action action, OptionModel option = null)
+    /// <param name="removable"></param>
+    public virtual TaskCompletionSource Send(Action action, bool removable = true)
     {
-      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = removable,
+        Dismiss = () => completion.TrySetResult(),
+        Run = () =>
         {
           try
           {
             action();
-            completion.TrySetResult(true);
+            completion.TrySetResult();
           }
           catch (Exception e)
           {
@@ -99,14 +100,15 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<T> action, OptionModel option = null)
+    /// <param name="removable"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Func<T> action, bool removable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = removable,
+        Dismiss = () => completion.TrySetResult(default),
+        Run = () =>
         {
           try
           {
@@ -128,19 +130,20 @@ namespace Distribution.Services
     /// Delegate processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<bool> Send(Func<Task> action, OptionModel option = null)
+    /// <param name="removable"></param>
+    public virtual TaskCompletionSource Send(Func<Task> action, bool removable = true)
     {
-      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = removable,
+        Dismiss = () => completion.TrySetResult(),
+        Run = () =>
         {
           try
           {
             action().GetAwaiter().GetResult();
-            completion.TrySetResult(true);
+            completion.TrySetResult();
           }
           catch (Exception e)
           {
@@ -158,14 +161,15 @@ namespace Distribution.Services
     /// Task delegate processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action, OptionModel option = null)
+    /// <param name="removable"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Func<Task<T>> action, bool removable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = removable,
+        Dismiss = () => completion.TrySetResult(default),
+        Run = () =>
         {
           try
           {
@@ -187,19 +191,20 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<bool> Send(Task action, OptionModel option = null)
+    /// <param name="femovable"></param>
+    public virtual TaskCompletionSource Send(Task action, bool femovable = true)
     {
-      var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = femovable,
+        Dismiss = () => completion.TrySetResult(),
+        Run = () =>
         {
           try
           {
             action.GetAwaiter().GetResult();
-            completion.TrySetResult(true);
+            completion.TrySetResult();
           }
           catch (Exception e)
           {
@@ -217,14 +222,15 @@ namespace Distribution.Services
     /// Task processor
     /// </summary>
     /// <param name="action"></param>
-    /// <param name="option"></param>
-    public virtual TaskCompletionSource<T> Send<T>(Task<T> action, OptionModel option = null)
+    /// <param name="removable"></param>
+    public virtual TaskCompletionSource<T> Send<T>(Task<T> action, bool removable = true)
     {
       var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
       var actionModel = new ActionModel
       {
-        Option = option,
-        Action = () =>
+        Removable = removable,
+        Dismiss = () => completion.TrySetResult(default),
+        Run = () =>
         {
           try
           {
@@ -250,18 +256,18 @@ namespace Distribution.Services
     {
       try
       {
-        if (_queue.Reader.TryPeek(out var previousAction))
+        if (queue.Reader.TryPeek(out var previousAction))
         {
-          if ((previousAction.Option ?? _option).IsRemovable && _queue.Reader.Count >= _count)
+          if (previousAction.Removable && queue.Reader.Count >= count && queue.Reader.TryRead(out var action))
           {
-            _queue.Reader.TryRead(out _);
+            action.Dismiss();
           }
         }
 
-        _queue.Writer.WriteAsync(actionModel);
-        _semaphore.Set();
+        queue.Writer.WriteAsync(actionModel);
       }
-      catch (ObjectDisposedException) {}
+      catch (OperationCanceledException) { }
+      catch (ObjectDisposedException) { }
     }
   }
 }
