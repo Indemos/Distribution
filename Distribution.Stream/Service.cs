@@ -44,15 +44,12 @@ namespace Distribution.Stream
       Timeout = TimeSpan.FromSeconds(15);
       Options = new JsonSerializerOptions
       {
-        WriteIndented = true,
+        WriteIndented = false,
         PropertyNameCaseInsensitive = true,
         ReferenceHandler = ReferenceHandler.IgnoreCycles,
         ReadCommentHandling = JsonCommentHandling.Skip,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        NumberHandling =
-          JsonNumberHandling.AllowReadingFromString |
-          JsonNumberHandling.AllowNamedFloatingPointLiterals |
-          JsonNumberHandling.WriteAsString,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull | JsonIgnoreCondition.WhenWritingDefault,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
         Converters =
         {
           new Converters.CustomConverter<bool>(),

@@ -17,10 +17,14 @@ namespace Distribution.Stream.Converters
           return default;
         }
 
-        var value = JsonDocument.ParseValue(ref reader).RootElement;
-        var response = (T)Convert.ChangeType($"{value}", dataType);
+        var value = $"{JsonDocument.ParseValue(ref reader).RootElement}";
 
-        return response;
+        if (string.Equals("NULL", value, StringComparison.OrdinalIgnoreCase))
+        {
+          return default;
+        }
+
+        return (T)Convert.ChangeType(value, dataType);
       }
       catch (Exception)
       {
@@ -30,6 +34,11 @@ namespace Distribution.Stream.Converters
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
+      if (value is null)
+      {
+        return;
+      }
+
       writer.WriteStringValue($"{value}");
     }
   }
