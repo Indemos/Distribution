@@ -1,28 +1,14 @@
-using Distribution.Stream.Models;
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Distribution.Stream
 {
-  public class Service : IDisposable
+  public class Service
   {
-    /// <summary>
-    /// Max execution time
-    /// </summary>
-    public virtual TimeSpan Timeout { get; set; }
-
-    /// <summary>
-    /// HTTP client instance
-    /// </summary>
-    public virtual HttpClient Client { get; set; }
-
     /// <summary>
     /// Serialization options
     /// </summary>
@@ -31,17 +17,8 @@ namespace Distribution.Stream
     /// <summary>
     /// Constructor
     /// </summary>
-    public Service() : this(new HttpClient())
+    public Service()
     {
-    }
-
-    /// <summary>
-    /// Constructor
-    /// </summary>
-    public Service(HttpClient client)
-    {
-      Client = client;
-      Timeout = TimeSpan.FromSeconds(15);
       Options = new JsonSerializerOptions
       {
         WriteIndented = false,
@@ -100,70 +77,5 @@ namespace Distribution.Stream
         })
       }
     };
-
-    /// <summary>
-    /// Stream HTTP content
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="message"></param>
-    /// <param name="options"></param>
-    /// <param name="cts"></param>
-    /// <returns></returns>
-    public virtual async Task<System.IO.Stream> Stream(HttpRequestMessage message, CancellationTokenSource cts = null)
-    {
-      cts ??= new CancellationTokenSource(Timeout);
-
-      using (var client = new HttpClient())
-      {
-        return await client
-          .GetStreamAsync(message.RequestUri, cts.Token)
-          .ConfigureAwait(false);
-      }
-    }
-
-    /// <summary>
-    /// Generic query sender
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="options"></param>
-    /// <param name="cts"></param>
-    /// <returns></returns>
-    public virtual async Task<ResponseModel<T>> Send<T>(
-      HttpRequestMessage message,
-      JsonSerializerOptions options = null,
-      CancellationTokenSource cts = null)
-    {
-      var response = new ResponseModel<T>();
-
-      try
-      {
-        cts ??= new CancellationTokenSource(Timeout);
-
-        using (var res = await Client.SendAsync(message, cts.Token).ConfigureAwait(false))
-        using (var content = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false))
-        {
-          response.Message = res;
-
-          if (res.IsSuccessStatusCode is false)
-          {
-            response.Error = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return response;
-          }
-
-          response.Data = await JsonSerializer.DeserializeAsync<T>(content, options).ConfigureAwait(false);
-        }
-      }
-      catch (Exception e)
-      {
-        response.Error = e.Message;
-      }
-
-      return response;
-    }
-
-    /// <summary>
-    /// Dispose
-    /// </summary>
-    public virtual void Dispose() => Client?.Dispose();
   }
 }

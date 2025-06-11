@@ -9,7 +9,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.2.7</Version>
+    <Version>1.2.8</Version>
     <Description>HTTP service with streaming and parallel execution.</Description>
     <Authors>artemiusgreat</Authors>
     <Copyright>indemos.com</Copyright>
@@ -18,6 +18,10 @@
     <PackageTags>scheduler async background process thread http service</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Flurl.Http" Version="4.0.2" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Distribution\Distribution.csproj" />
